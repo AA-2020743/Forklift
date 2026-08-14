@@ -46,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -58,6 +59,8 @@ import com.caloriecalc.app.domain.ActivityLevel
 import com.caloriecalc.app.domain.Goal
 import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.Sex
+import com.caloriecalc.app.ui.theme.StatusBelowThreshold
+import com.caloriecalc.app.ui.theme.StatusOnTarget
 import java.util.Calendar
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -133,6 +136,12 @@ fun ProfileScreen() {
         val minimumsExceedCalories = liveTargets.protein.minGrams * 4 + liveTargets.fat.minGrams * 9 >
             liveTargets.calorieTarget
 
+        // Informational check only: fat grams here come from g/kg bodyweight, but a widely-cited
+        // guideline is that fat should still land within roughly 20-30% of total calories.
+        val fatMinPercentOfCalories = liveTargets.fat.minGrams * 9.0 / liveTargets.calorieTarget * 100.0
+        val fatMaxPercentOfCalories = liveTargets.fat.maxGrams * 9.0 / liveTargets.calorieTarget * 100.0
+        val fatPercentHealthy = fatMinPercentOfCalories >= 20.0 && fatMaxPercentOfCalories <= 30.0
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
@@ -155,10 +164,18 @@ fun ProfileScreen() {
                             "Protein: ${liveTargets.protein.minGrams.roundToInt()}-" +
                                 "${liveTargets.protein.maxGrams.roundToInt()} g"
                         )
-                        Text(
-                            "Fat: ${liveTargets.fat.minGrams.roundToInt()}-" +
-                                "${liveTargets.fat.maxGrams.roundToInt()} g"
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                "Fat: ${liveTargets.fat.minGrams.roundToInt()}-" +
+                                    "${liveTargets.fat.maxGrams.roundToInt()} g"
+                            )
+                            Text(
+                                "(${fatMinPercentOfCalories.roundToInt()}-${fatMaxPercentOfCalories.roundToInt()}% of calories)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = if (fatPercentHealthy) StatusOnTarget else StatusBelowThreshold
+                            )
+                        }
                         Text(
                             "Carbs: ${liveTargets.carbs.minGrams.roundToInt()}-" +
                                 "${liveTargets.carbs.maxGrams.roundToInt()} g"
@@ -312,6 +329,14 @@ fun ProfileScreen() {
                                 fatMaxText = formatSuggestion(suggested.fatMaxGramsPerKg)
                             }) { Text("Use") }
                         }
+                        Text(
+                            "= ${fatMinPercentOfCalories.roundToInt()}-${fatMaxPercentOfCalories.roundToInt()}% of " +
+                                "calories at your current target " +
+                                if (fatPercentHealthy) "(within the 20-30% guideline)" else "(outside the 20-30% guideline)",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = if (fatPercentHealthy) StatusOnTarget else StatusBelowThreshold
+                        )
                         if (sex == Sex.MALE) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
