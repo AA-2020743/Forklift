@@ -17,8 +17,8 @@ data class NutritionTargets(
 data class SuggestedRanges(
     val proteinMinGramsPerKg: Double,
     val proteinMaxGramsPerKg: Double,
-    val fatPercentMin: Double,
-    val fatPercentMax: Double
+    val fatMinGramsPerKg: Double,
+    val fatMaxGramsPerKg: Double
 )
 
 /**
@@ -28,9 +28,10 @@ data class SuggestedRanges(
  *   adjustment (each [Goal] carries its own adjustment, including body-recomposition variants).
  * - Protein is a g/kg range (default 1.6-2.4 g/kg, the span generally supported by research
  *   for resistance-trained individuals), not a single target.
- * - Fat is a percent-of-calories range. For male sex, the floor is clamped to at least 20% of
- *   calories regardless of the user's own setting: diets below roughly that share of fat are
- *   associated with reduced testosterone in men, so this app won't recommend going lower.
+ * - Fat is a g/kg-of-bodyweight range (default 0.6 g/kg floor, 0.8-1.0 g/kg "good" target), not
+ *   a single target. For male sex, the minimum is additionally clamped so it never falls below
+ *   ~20% of calories regardless of the user's own g/kg setting: diets below roughly that share
+ *   of fat are associated with reduced testosterone in men, so this app won't recommend less.
  * - Carbs fill whatever's left of the calorie budget: the carb *ceiling* comes from protein/fat
  *   sitting at their minimums (most room left for carbs), and the carb *floor* comes from
  *   protein/fat sitting at their maximums (least room left).
@@ -67,26 +68,24 @@ object NutritionCalculator {
             Goal.LOSE, Goal.RECOMPOSITION -> 1.8 to 2.4
             Goal.MAINTAIN, Goal.RECOMPOSITION_LEAN_BULK, Goal.GAIN -> 1.6 to 2.2
         }
-        val fatMin = if (sex == Sex.MALE) MALE_FAT_PERCENT_FLOOR else 0.20
         return SuggestedRanges(
             proteinMinGramsPerKg = proteinMin,
             proteinMaxGramsPerKg = proteinMax,
-            fatPercentMin = fatMin,
-            fatPercentMax = 0.35
+            fatMinGramsPerKg = 0.6,
+            fatMaxGramsPerKg = 1.0
         )
     }
 
     fun computeTargets(profile: UserProfile): NutritionTargets {
         val calorieTarget = profile.manualCalorieTarget ?: computeAutoCalorieTarget(profile)
 
-        val fatPercentMin = if (profile.sex == Sex.MALE) {
-            max(profile.fatPercentMin, MALE_FAT_PERCENT_FLOOR)
+        val fatMinGramsFromBodyweight = profile.fatMinGramsPerKg * profile.bodyWeightKg
+        val fatMinGrams = if (profile.sex == Sex.MALE) {
+            max(fatMinGramsFromBodyweight, calorieTarget * MALE_FAT_PERCENT_FLOOR / 9)
         } else {
-            profile.fatPercentMin
+            fatMinGramsFromBodyweight
         }
-        val fatPercentMax = max(profile.fatPercentMax, fatPercentMin)
-        val fatMinGrams = calorieTarget * fatPercentMin / 9
-        val fatMaxGrams = calorieTarget * fatPercentMax / 9
+        val fatMaxGrams = max(profile.fatMaxGramsPerKg * profile.bodyWeightKg, fatMinGrams)
 
         val proteinMinGrams = profile.proteinMinGramsPerKg * profile.bodyWeightKg
         val proteinMaxGrams = max(profile.proteinMaxGramsPerKg, profile.proteinMinGramsPerKg) * profile.bodyWeightKg

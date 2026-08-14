@@ -27,12 +27,13 @@ data class UserProfile(
     val proteinMinGramsPerKg: Double = 1.6,
     val proteinMaxGramsPerKg: Double = 2.4,
     /**
-     * Share of total calories that should come from fat, as fractions (e.g. 0.20 = 20%).
-     * [NutritionCalculator] additionally enforces a hard biological floor for male sex
-     * (dietary fat below ~20% of calories is associated with reduced testosterone).
+     * Fat range in grams per kg of body weight: 0.6 g/kg is a commonly cited floor, 0.8-1.0 g/kg
+     * a "good" target. [NutritionCalculator] additionally enforces a hard biological floor for
+     * male sex (dietary fat below ~20% of calories is associated with reduced testosterone),
+     * expressed in grams and taken as a lower bound alongside this g/kg minimum.
      */
-    val fatPercentMin: Double = 0.20,
-    val fatPercentMax: Double = 0.35,
+    val fatMinGramsPerKg: Double = 0.6,
+    val fatMaxGramsPerKg: Double = 1.0,
     /** Manual override for daily calorie target; null means derive it from BMR/TDEE + goal. */
     val manualCalorieTarget: Int? = null,
     val weightReminderEnabled: Boolean = true,

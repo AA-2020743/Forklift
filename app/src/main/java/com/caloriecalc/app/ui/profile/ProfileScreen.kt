@@ -102,8 +102,8 @@ fun ProfileScreen() {
         var goal by remember(loaded) { mutableStateOf(loaded.goal) }
         var proteinMinText by remember(loaded) { mutableStateOf(loaded.proteinMinGramsPerKg.toString()) }
         var proteinMaxText by remember(loaded) { mutableStateOf(loaded.proteinMaxGramsPerKg.toString()) }
-        var fatMinText by remember(loaded) { mutableStateOf((loaded.fatPercentMin * 100).roundToInt().toString()) }
-        var fatMaxText by remember(loaded) { mutableStateOf((loaded.fatPercentMax * 100).roundToInt().toString()) }
+        var fatMinText by remember(loaded) { mutableStateOf(loaded.fatMinGramsPerKg.toString()) }
+        var fatMaxText by remember(loaded) { mutableStateOf(loaded.fatMaxGramsPerKg.toString()) }
         var manualCalorieText by remember(loaded) { mutableStateOf(loaded.manualCalorieTarget?.toString() ?: "") }
         var reminderEnabled by remember(loaded) { mutableStateOf(loaded.weightReminderEnabled) }
         var reminderHour by remember(loaded) { mutableIntStateOf(loaded.weightReminderHour) }
@@ -123,8 +123,8 @@ fun ProfileScreen() {
             goal = goal,
             proteinMinGramsPerKg = proteinMinText.toDoubleOrNull() ?: loaded.proteinMinGramsPerKg,
             proteinMaxGramsPerKg = proteinMaxText.toDoubleOrNull() ?: loaded.proteinMaxGramsPerKg,
-            fatPercentMin = (fatMinText.toDoubleOrNull() ?: (loaded.fatPercentMin * 100)) / 100.0,
-            fatPercentMax = (fatMaxText.toDoubleOrNull() ?: (loaded.fatPercentMax * 100)) / 100.0,
+            fatMinGramsPerKg = fatMinText.toDoubleOrNull() ?: loaded.fatMinGramsPerKg,
+            fatMaxGramsPerKg = fatMaxText.toDoubleOrNull() ?: loaded.fatMaxGramsPerKg,
             manualCalorieTarget = manualCalorieText.toIntOrNull()
         )
         val liveTargets = remember(liveProfile) { NutritionCalculator.computeTargets(liveProfile) }
@@ -284,15 +284,15 @@ fun ProfileScreen() {
                             OutlinedTextField(
                                 value = fatMinText,
                                 onValueChange = { fatMinText = it },
-                                label = { Text("Fat min (% kcal)") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text("Fat min (g/kg)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f)
                             )
                             OutlinedTextField(
                                 value = fatMaxText,
                                 onValueChange = { fatMaxText = it },
-                                label = { Text("Fat max (% kcal)") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                label = { Text("Fat max (g/kg)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -302,20 +302,20 @@ fun ProfileScreen() {
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                "Suggested: ${(suggested.fatPercentMin * 100).roundToInt()}-" +
-                                    "${(suggested.fatPercentMax * 100).roundToInt()}% of calories",
+                                "Minimum ${formatSuggestion(suggested.fatMinGramsPerKg)} g/kg, good target " +
+                                    "0.8-${formatSuggestion(suggested.fatMaxGramsPerKg)} g/kg",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             TextButton(onClick = {
-                                fatMinText = (suggested.fatPercentMin * 100).roundToInt().toString()
-                                fatMaxText = (suggested.fatPercentMax * 100).roundToInt().toString()
+                                fatMinText = formatSuggestion(suggested.fatMinGramsPerKg)
+                                fatMaxText = formatSuggestion(suggested.fatMaxGramsPerKg)
                             }) { Text("Use") }
                         }
                         if (sex == Sex.MALE) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Fat floor is clamped to at least 20% of calories for male sex " +
+                                "Fat floor is also clamped to at least 20% of calories for male sex " +
                                     "regardless of this setting (testosterone-related).",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -478,8 +478,8 @@ fun ProfileScreen() {
                             goal = goal,
                             proteinMinGramsPerKg = proteinMinText.toDoubleOrNull() ?: loaded.proteinMinGramsPerKg,
                             proteinMaxGramsPerKg = proteinMaxText.toDoubleOrNull() ?: loaded.proteinMaxGramsPerKg,
-                            fatPercentMin = (fatMinText.toDoubleOrNull() ?: (loaded.fatPercentMin * 100)) / 100.0,
-                            fatPercentMax = (fatMaxText.toDoubleOrNull() ?: (loaded.fatPercentMax * 100)) / 100.0,
+                            fatMinGramsPerKg = fatMinText.toDoubleOrNull() ?: loaded.fatMinGramsPerKg,
+                            fatMaxGramsPerKg = fatMaxText.toDoubleOrNull() ?: loaded.fatMaxGramsPerKg,
                             manualCalorieTarget = manualCalorieText.toIntOrNull(),
                             weightReminderEnabled = reminderEnabled,
                             weightReminderHour = reminderHour,
