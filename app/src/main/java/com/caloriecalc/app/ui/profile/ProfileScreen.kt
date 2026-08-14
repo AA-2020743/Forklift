@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import android.text.format.DateFormat
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,16 +31,21 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -49,7 +56,9 @@ import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.domain.ActivityLevel
 import com.caloriecalc.app.domain.Goal
+import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.Sex
+import java.util.Calendar
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -60,9 +69,9 @@ fun ProfileScreen() {
     val viewModel: ProfileViewModel = viewModel(
         factory = SimpleViewModelFactory { ProfileViewModel(container.profileRepository, container.reminderScheduler) }
     )
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val mealSlots by container.mealSlotRepository.observeActive().collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     var initialProfile by remember { mutableStateOf<UserProfile?>(null) }
     LaunchedEffect(Unit) {
@@ -97,11 +106,32 @@ fun ProfileScreen() {
         var fatMaxText by remember(loaded) { mutableStateOf((loaded.fatPercentMax * 100).roundToInt().toString()) }
         var manualCalorieText by remember(loaded) { mutableStateOf(loaded.manualCalorieTarget?.toString() ?: "") }
         var reminderEnabled by remember(loaded) { mutableStateOf(loaded.weightReminderEnabled) }
-        var reminderHourText by remember(loaded) { mutableStateOf(loaded.weightReminderHour.toString()) }
-        var reminderMinuteText by remember(loaded) { mutableStateOf(loaded.weightReminderMinute.toString()) }
+        var reminderHour by remember(loaded) { mutableIntStateOf(loaded.weightReminderHour) }
+        var reminderMinute by remember(loaded) { mutableIntStateOf(loaded.weightReminderMinute) }
+        var showTimePicker by remember { mutableStateOf(false) }
         var newMealName by remember { mutableStateOf("") }
         var geminiApiKeyText by remember { mutableStateOf(container.apiKeyStore.getGeminiApiKey() ?: "") }
         var geminiKeySaved by remember { mutableStateOf(false) }
+
+        // Live preview: recomputed from whatever is currently typed, before Save is pressed.
+        val liveProfile = loaded.copy(
+            bodyWeightKg = bodyWeightText.toDoubleOrNull() ?: loaded.bodyWeightKg,
+            heightCm = heightText.toDoubleOrNull() ?: loaded.heightCm,
+            age = ageText.toIntOrNull() ?: loaded.age,
+            sex = sex,
+            activityLevel = activityLevel,
+            goal = goal,
+            proteinMinGramsPerKg = proteinMinText.toDoubleOrNull() ?: loaded.proteinMinGramsPerKg,
+            proteinMaxGramsPerKg = proteinMaxText.toDoubleOrNull() ?: loaded.proteinMaxGramsPerKg,
+            fatPercentMin = (fatMinText.toDoubleOrNull() ?: (loaded.fatPercentMin * 100)) / 100.0,
+            fatPercentMax = (fatMaxText.toDoubleOrNull() ?: (loaded.fatPercentMax * 100)) / 100.0,
+            manualCalorieTarget = manualCalorieText.toIntOrNull()
+        )
+        val liveTargets = remember(liveProfile) { NutritionCalculator.computeTargets(liveProfile) }
+        val autoCalorieTarget = remember(liveProfile) { NutritionCalculator.computeAutoCalorieTarget(liveProfile) }
+        val suggested = remember(goal, sex) { NutritionCalculator.suggestedRanges(goal, sex) }
+        val minimumsExceedCalories = liveTargets.protein.minGrams * 4 + liveTargets.fat.minGrams * 9 >
+            liveTargets.calorieTarget
 
         LazyColumn(
             modifier = Modifier
@@ -114,20 +144,34 @@ fun ProfileScreen() {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Your daily targets", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Updates instantly as you edit below — press Save to keep changes.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Calories: ${state.targets.calorieTarget} kcal")
+                        Text("Calories: ${liveTargets.calorieTarget} kcal")
                         Text(
-                            "Protein: ${state.targets.protein.minGrams.roundToInt()}-" +
-                                "${state.targets.protein.maxGrams.roundToInt()} g"
+                            "Protein: ${liveTargets.protein.minGrams.roundToInt()}-" +
+                                "${liveTargets.protein.maxGrams.roundToInt()} g"
                         )
                         Text(
-                            "Fat: ${state.targets.fat.minGrams.roundToInt()}-" +
-                                "${state.targets.fat.maxGrams.roundToInt()} g"
+                            "Fat: ${liveTargets.fat.minGrams.roundToInt()}-" +
+                                "${liveTargets.fat.maxGrams.roundToInt()} g"
                         )
                         Text(
-                            "Carbs: ${state.targets.carbs.minGrams.roundToInt()}-" +
-                                "${state.targets.carbs.maxGrams.roundToInt()} g"
+                            "Carbs: ${liveTargets.carbs.minGrams.roundToInt()}-" +
+                                "${liveTargets.carbs.maxGrams.roundToInt()} g"
                         )
+                        if (minimumsExceedCalories) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Your minimum protein + fat needs alone exceed this calorie target, " +
+                                    "so carbs are being squeezed to 0g. Raise calories or lower the minimums.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -218,6 +262,23 @@ fun ProfileScreen() {
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Suggested for ${goal.displayName}: " +
+                                    "${formatSuggestion(suggested.proteinMinGramsPerKg)}-" +
+                                    "${formatSuggestion(suggested.proteinMaxGramsPerKg)} g/kg",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(onClick = {
+                                proteinMinText = formatSuggestion(suggested.proteinMinGramsPerKg)
+                                proteinMaxText = formatSuggestion(suggested.proteinMaxGramsPerKg)
+                            }) { Text("Use") }
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
@@ -235,6 +296,22 @@ fun ProfileScreen() {
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Suggested: ${(suggested.fatPercentMin * 100).roundToInt()}-" +
+                                    "${(suggested.fatPercentMax * 100).roundToInt()}% of calories",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(onClick = {
+                                fatMinText = (suggested.fatPercentMin * 100).roundToInt().toString()
+                                fatMaxText = (suggested.fatPercentMax * 100).roundToInt().toString()
+                            }) { Text("Use") }
+                        }
                         if (sex == Sex.MALE) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -248,10 +325,35 @@ fun ProfileScreen() {
                         OutlinedTextField(
                             value = manualCalorieText,
                             onValueChange = { manualCalorieText = it },
-                            label = { Text("Manual calorie target override (optional)") },
+                            label = { Text("Total calories for this period") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Calculated from your stats + goal: $autoCalorieTarget kcal. " +
+                                    "Fat, protein, and carbs above adjust automatically to whatever total you set.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = { manualCalorieText = "" }) { Text("Reset") }
+                        }
+                        val manualBelowSafe = manualCalorieText.toIntOrNull()
+                            ?.let { it < NutritionCalculator.MIN_SAFE_CALORIES } ?: false
+                        if (manualBelowSafe) {
+                            Text(
+                                "Below the generally recommended safe minimum of " +
+                                    "${NutritionCalculator.MIN_SAFE_CALORIES} kcal/day.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
                 }
             }
@@ -348,21 +450,16 @@ fun ProfileScreen() {
                         }
                         if (reminderEnabled) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedTextField(
-                                    value = reminderHourText,
-                                    onValueChange = { reminderHourText = it },
-                                    label = { Text("Hour (0-23)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.weight(1f)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Reminder time: ${formatReminderTime(context, reminderHour, reminderMinute)}",
+                                    style = MaterialTheme.typography.bodyMedium
                                 )
-                                OutlinedTextField(
-                                    value = reminderMinuteText,
-                                    onValueChange = { reminderMinuteText = it },
-                                    label = { Text("Minute (0-59)") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.weight(1f)
-                                )
+                                TextButton(onClick = { showTimePicker = true }) { Text("Change") }
                             }
                         }
                     }
@@ -385,8 +482,8 @@ fun ProfileScreen() {
                             fatPercentMax = (fatMaxText.toDoubleOrNull() ?: (loaded.fatPercentMax * 100)) / 100.0,
                             manualCalorieTarget = manualCalorieText.toIntOrNull(),
                             weightReminderEnabled = reminderEnabled,
-                            weightReminderHour = reminderHourText.toIntOrNull()?.coerceIn(0, 23) ?: loaded.weightReminderHour,
-                            weightReminderMinute = reminderMinuteText.toIntOrNull()?.coerceIn(0, 59) ?: loaded.weightReminderMinute
+                            weightReminderHour = reminderHour,
+                            weightReminderMinute = reminderMinute
                         )
                         viewModel.updateProfile(updated)
                         initialProfile = updated
@@ -397,5 +494,38 @@ fun ProfileScreen() {
                 }
             }
         }
+
+        if (showTimePicker) {
+            val timePickerState = rememberTimePickerState(
+                initialHour = reminderHour,
+                initialMinute = reminderMinute,
+                is24Hour = DateFormat.is24HourFormat(context)
+            )
+            AlertDialog(
+                onDismissRequest = { showTimePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        reminderHour = timePickerState.hour
+                        reminderMinute = timePickerState.minute
+                        showTimePicker = false
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                },
+                text = { TimePicker(state = timePickerState) }
+            )
+        }
     }
 }
+
+private fun formatReminderTime(context: android.content.Context, hour: Int, minute: Int): String {
+    val calendar = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.MINUTE, minute)
+    }
+    return DateFormat.getTimeFormat(context).format(calendar.time)
+}
+
+private fun formatSuggestion(value: Double): String =
+    if (value == value.roundToInt().toDouble()) value.roundToInt().toString() else value.toString()
