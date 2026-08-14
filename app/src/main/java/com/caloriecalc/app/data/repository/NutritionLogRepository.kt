@@ -6,7 +6,6 @@ import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.dao.MealEntryDao
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.MealEntry
-import com.caloriecalc.app.domain.MealType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,20 +18,20 @@ class NutritionLogRepository(
     fun entriesForDay(epochDay: Long): Flow<List<MealEntryWithFood>> =
         mealEntryDao.getEntriesForDay(epochDay).map { it.attachFood() }
 
-    fun entriesForMeal(epochDay: Long, mealType: MealType): Flow<List<MealEntryWithFood>> =
-        mealEntryDao.getEntriesForMeal(epochDay, mealType).map { it.attachFood() }
+    fun entriesForMeal(epochDay: Long, mealSlotId: Long): Flow<List<MealEntryWithFood>> =
+        mealEntryDao.getEntriesForMeal(epochDay, mealSlotId).map { it.attachFood() }
 
     fun totalsForDay(epochDay: Long): Flow<DayMacroTotals> = mealEntryDao.getTotalsForDay(epochDay)
 
     fun totalsInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayMacroTotalsWithDay>> =
         mealEntryDao.getTotalsInRange(fromEpochDay, toEpochDay)
 
-    suspend fun logFood(food: FoodItem, mealType: MealType, epochDay: Long, grams: Double) {
+    suspend fun logFood(food: FoodItem, mealSlotId: Long, epochDay: Long, grams: Double) {
         val factor = grams / 100.0
         val loggedAt = System.currentTimeMillis()
         val entry = MealEntry(
             foodItemId = food.id,
-            mealType = mealType,
+            mealSlotId = mealSlotId,
             epochDay = epochDay,
             loggedAtEpochMillis = loggedAt,
             grams = grams,

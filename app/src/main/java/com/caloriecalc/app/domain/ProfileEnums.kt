@@ -13,5 +13,7 @@ enum class ActivityLevel(val multiplier: Double, val displayName: String) {
 enum class Goal(val calorieAdjustment: Int, val displayName: String) {
     LOSE(-500, "Lose weight"),
     MAINTAIN(0, "Maintain weight"),
+    RECOMPOSITION(-150, "Body recomposition"),
+    RECOMPOSITION_LEAN_BULK(150, "Recomp (bulking tilt)"),
     GAIN(300, "Gain weight")
 }

@@ -28,19 +28,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import com.caloriecalc.app.ui.components.CalorieRing
-import com.caloriecalc.app.ui.components.MacroProgressRow
+import com.caloriecalc.app.ui.components.MacroRangeBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    onMealClick: (MealType) -> Unit
+    onMealClick: (mealSlotId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: DashboardViewModel = viewModel(
         factory = SimpleViewModelFactory {
-            DashboardViewModel(container.profileRepository, container.nutritionLogRepository)
+            DashboardViewModel(container.profileRepository, container.nutritionLogRepository, container.mealSlotRepository)
         }
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -76,11 +75,11 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Macros", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroProgressRow(label = "Protein", progress = state.proteinProgress)
+                        MacroRangeBar(label = "Protein", progress = state.proteinProgress)
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroProgressRow(label = "Fat", progress = state.fatProgress)
+                        MacroRangeBar(label = "Fat", progress = state.fatProgress)
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroProgressRow(label = "Carbs (remaining budget)", progress = state.carbProgress)
+                        MacroRangeBar(label = "Carbs", progress = state.carbProgress)
                     }
                 }
             }
@@ -89,10 +88,10 @@ fun DashboardScreen(
                 Text("Meals", style = MaterialTheme.typography.titleMedium)
             }
 
-            items(state.mealSummaries) { meal ->
+            items(state.mealSummaries, key = { it.mealSlot.id }) { meal ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onMealClick(meal.mealType) },
+                    onClick = { onMealClick(meal.mealSlot.id) },
                     colors = CardDefaults.cardColors()
                 ) {
                     Row(
@@ -102,7 +101,7 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(meal.mealType.displayName, fontWeight = FontWeight.Medium)
+                            Text(meal.mealSlot.name, fontWeight = FontWeight.Medium)
                             Text(
                                 text = if (meal.itemCount == 0) "No items logged" else "${meal.itemCount} item(s)",
                                 style = MaterialTheme.typography.bodyMedium,

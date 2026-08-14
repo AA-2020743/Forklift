@@ -1,6 +1,7 @@
 package com.caloriecalc.app.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -12,6 +13,12 @@ interface WeightLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(weightLog: WeightLog)
+
+    @Delete
+    suspend fun delete(weightLog: WeightLog)
+
+    @Query("DELETE FROM weight_logs WHERE epochDay = :epochDay")
+    suspend fun deleteForDay(epochDay: Long)
 
     @Query("SELECT * FROM weight_logs ORDER BY epochDay ASC")
     fun observeAll(): Flow<List<WeightLog>>

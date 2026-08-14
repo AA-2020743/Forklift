@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -95,7 +96,9 @@ fun LogSetScreen(
                     val reps = repsText.toIntOrNull()
                     if (weight != null && reps != null) {
                         viewModel.addSet(weight, reps)
-                        repsText = ""
+                        // Deliberately keep both fields as-is: most sets in a working set
+                        // repeat the same weight/reps, so tapping "Add set" again should
+                        // just work without retyping anything.
                     }
                 },
                 enabled = weightText.toDoubleOrNull() != null && repsText.toIntOrNull() != null,
@@ -121,8 +124,13 @@ fun LogSetScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("Set ${set.setNumber}: ${set.weightKg}kg x ${set.reps} reps")
-                            IconButton(onClick = { viewModel.deleteSet(set) }) {
-                                Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                            Row {
+                                IconButton(onClick = { viewModel.addSet(set.weightKg, set.reps) }) {
+                                    Icon(Icons.Filled.ContentCopy, contentDescription = "Duplicate this set")
+                                }
+                                IconButton(onClick = { viewModel.deleteSet(set) }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                                }
                             }
                         }
                     }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -35,17 +36,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import com.caloriecalc.app.scanner.BarcodeScannerView
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarcodeScanScreen(
-    mealType: MealType,
+    mealSlotId: Long,
     onBack: () -> Unit,
-    onManualEntry: (MealType) -> Unit,
-    onFoodResolved: (foodId: Long, mealType: MealType) -> Unit
+    onManualEntry: (Long) -> Unit,
+    onSearchByName: (Long) -> Unit,
+    onFoodResolved: (foodId: Long, mealSlotId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
@@ -95,7 +96,7 @@ fun BarcodeScanScreen(
                                 val food = container.foodRepository.lookupBarcode(code)
                                 isLookingUp = false
                                 if (food != null) {
-                                    onFoodResolved(food.id, mealType)
+                                    onFoodResolved(food.id, mealSlotId)
                                 } else {
                                     notFoundBarcode = code
                                     handledBarcode = null
@@ -130,11 +131,27 @@ fun BarcodeScanScreen(
                 AlertDialog(
                     onDismissRequest = { notFoundBarcode = null },
                     title = { Text("Product not found") },
-                    text = { Text("No product found for barcode $currentNotFound. You can add it manually.") },
+                    text = {
+                        Column {
+                            Text(
+                                "No product found for barcode $currentNotFound. Coverage varies by " +
+                                    "region, so it may just not be contributed yet — try searching by " +
+                                    "name, or add it manually (you'll only need to do that once)."
+                            )
+                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+                            TextButton(
+                                onClick = {
+                                    notFoundBarcode = null
+                                    onSearchByName(mealSlotId)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) { Text("Search by name instead") }
+                        }
+                    },
                     confirmButton = {
                         TextButton(onClick = {
                             notFoundBarcode = null
-                            onManualEntry(mealType)
+                            onManualEntry(mealSlotId)
                         }) { Text("Add manually") }
                     },
                     dismissButton = {

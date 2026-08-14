@@ -65,14 +65,13 @@ fun WorkoutListScreen(
                 item {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Undertrained this week", style = MaterialTheme.typography.titleMedium)
+                            Text("A few gaps, last 14 days", style = MaterialTheme.typography.titleMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                             report.suggestions.forEach { suggestion ->
                                 Text(
-                                    text = "${suggestion.subGroup.displayName}: try ${suggestion.exercises.joinToString { it.name }}",
+                                    text = "${suggestion.subGroup.displayName} — ${suggestion.exercises.joinToString { it.name }}",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
-                                Spacer(modifier = Modifier.height(4.dp))
                             }
                         }
                     }

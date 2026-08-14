@@ -30,15 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManualFoodEntryScreen(
-    mealType: MealType,
+    mealSlotId: Long,
     onBack: () -> Unit,
-    onSaved: (foodId: Long, mealType: MealType) -> Unit
+    onSaved: (foodId: Long, mealSlotId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
@@ -140,7 +139,7 @@ fun ManualFoodEntryScreen(
                             servingSizeGrams = servingGrams.toDoubleOrNull(),
                             servingName = servingName.trim().takeIf { it.isNotBlank() }
                         )
-                        onSaved(food.id, mealType)
+                        onSaved(food.id, mealSlotId)
                     }
                 },
                 enabled = isValid,

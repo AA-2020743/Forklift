@@ -2,25 +2,38 @@ package com.caloriecalc.app.ui.foodlog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.caloriecalc.app.data.local.entity.MealSlot
 import com.caloriecalc.app.data.repository.MealEntryWithFood
+import com.caloriecalc.app.data.repository.MealSlotRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
-import com.caloriecalc.app.domain.MealType
 import java.time.LocalDate
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class MealLogViewModel(
-    private val mealType: MealType,
-    private val nutritionLogRepository: NutritionLogRepository
+    private val mealSlotId: Long,
+    private val nutritionLogRepository: NutritionLogRepository,
+    private val mealSlotRepository: MealSlotRepository
 ) : ViewModel() {
 
     private val today = LocalDate.now().toEpochDay()
 
+    private val _mealSlot = MutableStateFlow<MealSlot?>(null)
+    val mealSlot: StateFlow<MealSlot?> = _mealSlot.asStateFlow()
+
     val entries: StateFlow<List<MealEntryWithFood>> =
-        nutritionLogRepository.entriesForMeal(today, mealType)
+        nutritionLogRepository.entriesForMeal(today, mealSlotId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    init {
+        viewModelScope.launch {
+            _mealSlot.value = mealSlotRepository.getById(mealSlotId)
+        }
+    }
 
     fun deleteEntry(entryWithFood: MealEntryWithFood) {
         viewModelScope.launch {

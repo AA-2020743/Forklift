@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.caloriecalc.app.domain.MealType
 
 sealed class Screen(val route: String) {
     data object Dashboard : Screen("dashboard")
@@ -14,24 +13,24 @@ sealed class Screen(val route: String) {
     data object Weight : Screen("weight")
     data object Profile : Screen("profile")
 
-    data object MealLog : Screen("meal_log/{mealType}") {
-        fun createRoute(mealType: MealType) = "meal_log/${mealType.name}"
+    data object MealLog : Screen("meal_log/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "meal_log/$mealSlotId"
     }
 
-    data object AddFood : Screen("add_food/{mealType}") {
-        fun createRoute(mealType: MealType) = "add_food/${mealType.name}"
+    data object AddFood : Screen("add_food/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "add_food/$mealSlotId"
     }
 
-    data object BarcodeScan : Screen("barcode_scan/{mealType}") {
-        fun createRoute(mealType: MealType) = "barcode_scan/${mealType.name}"
+    data object BarcodeScan : Screen("barcode_scan/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "barcode_scan/$mealSlotId"
     }
 
-    data object ManualFoodEntry : Screen("manual_food_entry/{mealType}") {
-        fun createRoute(mealType: MealType) = "manual_food_entry/${mealType.name}"
+    data object ManualFoodEntry : Screen("manual_food_entry/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "manual_food_entry/$mealSlotId"
     }
 
-    data object Quantity : Screen("quantity/{foodId}/{mealType}") {
-        fun createRoute(foodId: Long, mealType: MealType) = "quantity/$foodId/${mealType.name}"
+    data object Quantity : Screen("quantity/{foodId}/{mealSlotId}") {
+        fun createRoute(foodId: Long, mealSlotId: Long) = "quantity/$foodId/$mealSlotId"
     }
 
     data object WorkoutSessionDetail : Screen("workout_session/{sessionId}") {

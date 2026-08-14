@@ -56,11 +56,24 @@ class WeightViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeightUiState())
 
-    fun logWeight(weightKg: Double) {
+    fun logWeight(weightKg: Double) = logWeightForDay(today, weightKg)
+
+    /**
+     * Logs (or corrects) the weight for an arbitrary day. Only updates the profile's current
+     * body weight when the edited day is today — editing a past entry shouldn't change what
+     * "current" weight the rest of the app (macro targets, etc.) uses.
+     */
+    fun logWeightForDay(epochDay: Long, weightKg: Double) {
         viewModelScope.launch {
-            weightRepository.logWeight(today, weightKg)
-            val profile = profileRepository.getProfile()
-            profileRepository.updateProfile(profile.copy(bodyWeightKg = weightKg))
+            weightRepository.logWeight(epochDay, weightKg)
+            if (epochDay == today) {
+                val profile = profileRepository.getProfile()
+                profileRepository.updateProfile(profile.copy(bodyWeightKg = weightKg))
+            }
         }
+    }
+
+    fun deleteWeightForDay(epochDay: Long) {
+        viewModelScope.launch { weightRepository.deleteForDay(epochDay) }
     }
 }

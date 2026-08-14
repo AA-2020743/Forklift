@@ -4,18 +4,11 @@ import androidx.room.TypeConverter
 import com.caloriecalc.app.data.local.entity.FoodSource
 import com.caloriecalc.app.domain.ActivityLevel
 import com.caloriecalc.app.domain.Goal
-import com.caloriecalc.app.domain.MealType
 import com.caloriecalc.app.domain.MuscleGroup
 import com.caloriecalc.app.domain.MuscleSubGroup
 import com.caloriecalc.app.domain.Sex
 
 class Converters {
-
-    @TypeConverter
-    fun fromMealType(value: MealType): String = value.name
-
-    @TypeConverter
-    fun toMealType(value: String): MealType = MealType.valueOf(value)
 
     @TypeConverter
     fun fromFoodSource(value: FoodSource): String = value.name

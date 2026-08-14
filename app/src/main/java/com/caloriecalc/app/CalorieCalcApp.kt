@@ -22,6 +22,7 @@ class CalorieCalcApp : Application() {
 
         applicationScope.launch {
             appContainer.workoutRepository.ensureSeeded()
+            appContainer.mealSlotRepository.ensureSeeded()
             val profile = appContainer.profileRepository.getProfile()
             if (profile.weightReminderEnabled) {
                 appContainer.reminderScheduler.scheduleWeightReminder(

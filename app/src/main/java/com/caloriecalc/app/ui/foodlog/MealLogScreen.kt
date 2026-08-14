@@ -31,26 +31,29 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealLogScreen(
-    mealType: MealType,
+    mealSlotId: Long,
     onBack: () -> Unit,
-    onAddFood: (MealType) -> Unit
+    onAddFood: (Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: MealLogViewModel = viewModel(
-        factory = SimpleViewModelFactory { MealLogViewModel(mealType, container.nutritionLogRepository) }
+        factory = SimpleViewModelFactory {
+            MealLogViewModel(mealSlotId, container.nutritionLogRepository, container.mealSlotRepository)
+        }
     )
     val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val mealSlot by viewModel.mealSlot.collectAsStateWithLifecycle()
+    val mealName = mealSlot?.name ?: "Meal"
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(mealType.displayName) },
+                title = { Text(mealName) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -59,7 +62,7 @@ fun MealLogScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onAddFood(mealType) }) {
+            FloatingActionButton(onClick = { onAddFood(mealSlotId) }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add food")
             }
         }
@@ -72,7 +75,7 @@ fun MealLogScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Nothing logged yet for ${mealType.displayName.lowercase()}.")
+                Text("Nothing logged yet for ${mealName.lowercase()}.")
             }
         } else {
             val totalCalories = entries.sumOf { it.entry.calories }.roundToInt()

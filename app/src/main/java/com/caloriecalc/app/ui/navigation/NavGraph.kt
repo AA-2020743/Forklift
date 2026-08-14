@@ -16,7 +16,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.caloriecalc.app.domain.MealType
 import com.caloriecalc.app.ui.dashboard.DashboardScreen
 import com.caloriecalc.app.ui.foodlog.AddFoodScreen
 import com.caloriecalc.app.ui.foodlog.BarcodeScanScreen
@@ -30,10 +29,6 @@ import com.caloriecalc.app.ui.workout.ExercisePickerScreen
 import com.caloriecalc.app.ui.workout.LogSetScreen
 import com.caloriecalc.app.ui.workout.WorkoutListScreen
 import com.caloriecalc.app.ui.workout.WorkoutSessionScreen
-
-private fun mealTypeArg(entry: androidx.navigation.NavBackStackEntry): MealType =
-    entry.arguments?.getString("mealType")?.let { runCatching { MealType.valueOf(it) }.getOrNull() }
-        ?: MealType.BREAKFAST
 
 private val topLevelRoutes: Set<String> = bottomNavItems.map { it.screen.route }.toSet()
 
@@ -71,8 +66,8 @@ fun AppNavHost() {
             modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
         ) {
             composable(Screen.Dashboard.route) {
-                DashboardScreen(onMealClick = { mealType ->
-                    navController.navigate(Screen.MealLog.createRoute(mealType))
+                DashboardScreen(onMealClick = { mealSlotId ->
+                    navController.navigate(Screen.MealLog.createRoute(mealSlotId))
                 })
             }
             composable(Screen.Workouts.route) {
@@ -85,11 +80,11 @@ fun AppNavHost() {
 
             composable(
                 route = Screen.MealLog.route,
-                arguments = listOf(navArgument("mealType") { type = NavType.StringType })
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
             ) { entry ->
-                val mealType = mealTypeArg(entry)
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
                 MealLogScreen(
-                    mealType = mealType,
+                    mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
                     onAddFood = { navController.navigate(Screen.AddFood.createRoute(it)) }
                 )
@@ -97,40 +92,41 @@ fun AppNavHost() {
 
             composable(
                 route = Screen.AddFood.route,
-                arguments = listOf(navArgument("mealType") { type = NavType.StringType })
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
             ) { entry ->
-                val mealType = mealTypeArg(entry)
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
                 AddFoodScreen(
-                    mealType = mealType,
+                    mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
                     onScanBarcode = { navController.navigate(Screen.BarcodeScan.createRoute(it)) },
                     onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
-                    onFoodSelected = { foodId, mt -> navController.navigate(Screen.Quantity.createRoute(foodId, mt)) }
+                    onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
                 )
             }
 
             composable(
                 route = Screen.BarcodeScan.route,
-                arguments = listOf(navArgument("mealType") { type = NavType.StringType })
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
             ) { entry ->
-                val mealType = mealTypeArg(entry)
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
                 BarcodeScanScreen(
-                    mealType = mealType,
+                    mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
                     onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
-                    onFoodResolved = { foodId, mt -> navController.navigate(Screen.Quantity.createRoute(foodId, mt)) }
+                    onSearchByName = { navController.popBackStack() },
+                    onFoodResolved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
                 )
             }
 
             composable(
                 route = Screen.ManualFoodEntry.route,
-                arguments = listOf(navArgument("mealType") { type = NavType.StringType })
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
             ) { entry ->
-                val mealType = mealTypeArg(entry)
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
                 ManualFoodEntryScreen(
-                    mealType = mealType,
+                    mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onSaved = { foodId, mt -> navController.navigate(Screen.Quantity.createRoute(foodId, mt)) }
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
                 )
             }
 
@@ -138,16 +134,16 @@ fun AppNavHost() {
                 route = Screen.Quantity.route,
                 arguments = listOf(
                     navArgument("foodId") { type = NavType.LongType },
-                    navArgument("mealType") { type = NavType.StringType }
+                    navArgument("mealSlotId") { type = NavType.LongType }
                 )
             ) { entry ->
                 val foodId = entry.arguments?.getLong("foodId") ?: 0L
-                val mealType = mealTypeArg(entry)
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
                 QuantityScreen(
                     foodId = foodId,
-                    mealType = mealType,
+                    mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onLogged = { navController.popBackStack(Screen.MealLog.createRoute(mealType), false) }
+                    onLogged = { navController.popBackStack(Screen.MealLog.createRoute(mealSlotId), false) }
                 )
             }
 

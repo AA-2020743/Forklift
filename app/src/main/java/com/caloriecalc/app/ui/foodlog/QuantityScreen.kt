@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -48,7 +47,7 @@ private enum class QuantityMode { GRAMS, SERVINGS }
 @Composable
 fun QuantityScreen(
     foodId: Long,
-    mealType: MealType,
+    mealSlotId: Long,
     onBack: () -> Unit,
     onLogged: () -> Unit
 ) {
@@ -58,6 +57,11 @@ fun QuantityScreen(
     var food by remember { mutableStateOf<FoodItem?>(null) }
     LaunchedEffect(foodId) {
         food = container.foodRepository.getById(foodId)
+    }
+
+    var mealName by remember { mutableStateOf("meal") }
+    LaunchedEffect(mealSlotId) {
+        mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
     }
 
     val currentFood = food
@@ -152,14 +156,14 @@ fun QuantityScreen(
                 onClick = {
                     scope.launch {
                         val today = LocalDate.now().toEpochDay()
-                        container.nutritionLogRepository.logFood(currentFood, mealType, today, grams.coerceAtLeast(0.0))
+                        container.nutritionLogRepository.logFood(currentFood, mealSlotId, today, grams.coerceAtLeast(0.0))
                         onLogged()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = grams > 0.0
             ) {
-                Text("Log to ${mealType.displayName}")
+                Text("Log to $mealName")
             }
         }
     }

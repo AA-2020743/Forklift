@@ -5,7 +5,6 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import com.caloriecalc.app.data.local.entity.MealEntry
-import com.caloriecalc.app.domain.MealType
 import kotlinx.coroutines.flow.Flow
 
 data class DayMacroTotals(
@@ -27,8 +26,8 @@ interface MealEntryDao {
     @Query("SELECT * FROM meal_entries WHERE epochDay = :epochDay ORDER BY loggedAtEpochMillis ASC")
     fun getEntriesForDay(epochDay: Long): Flow<List<MealEntry>>
 
-    @Query("SELECT * FROM meal_entries WHERE epochDay = :epochDay AND mealType = :mealType ORDER BY loggedAtEpochMillis ASC")
-    fun getEntriesForMeal(epochDay: Long, mealType: MealType): Flow<List<MealEntry>>
+    @Query("SELECT * FROM meal_entries WHERE epochDay = :epochDay AND mealSlotId = :mealSlotId ORDER BY loggedAtEpochMillis ASC")
+    fun getEntriesForMeal(epochDay: Long, mealSlotId: Long): Flow<List<MealEntry>>
 
     @Query(
         """

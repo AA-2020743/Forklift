@@ -18,7 +18,10 @@ class WorkoutListViewModel(
 ) : ViewModel() {
 
     private val today = LocalDate.now().toEpochDay()
-    private val coverageWindowStart = today - 6
+
+    // 14 days rather than a strict 7 so splits that hit each muscle roughly weekly (or every
+    // ~10 days) still get credit instead of being flagged every time the window resets.
+    private val coverageWindowStart = today - 13
 
     val sessions: StateFlow<List<WorkoutSession>> = workoutRepository.observeSessions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

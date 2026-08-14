@@ -15,11 +15,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -31,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +50,7 @@ import com.caloriecalc.app.domain.ActivityLevel
 import com.caloriecalc.app.domain.Goal
 import com.caloriecalc.app.domain.Sex
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +60,8 @@ fun ProfileScreen() {
         factory = SimpleViewModelFactory { ProfileViewModel(container.profileRepository, container.reminderScheduler) }
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val mealSlots by container.mealSlotRepository.observeActive().collectAsStateWithLifecycle(initialValue = emptyList())
+    val scope = rememberCoroutineScope()
 
     var initialProfile by remember { mutableStateOf<UserProfile?>(null) }
     LaunchedEffect(Unit) {
@@ -82,13 +90,15 @@ fun ProfileScreen() {
         var sex by remember(loaded) { mutableStateOf(loaded.sex) }
         var activityLevel by remember(loaded) { mutableStateOf(loaded.activityLevel) }
         var goal by remember(loaded) { mutableStateOf(loaded.goal) }
-        var proteinPerKgText by remember(loaded) { mutableStateOf(loaded.proteinGramsPerKg.toString()) }
+        var proteinMinText by remember(loaded) { mutableStateOf(loaded.proteinMinGramsPerKg.toString()) }
+        var proteinMaxText by remember(loaded) { mutableStateOf(loaded.proteinMaxGramsPerKg.toString()) }
         var fatMinText by remember(loaded) { mutableStateOf((loaded.fatPercentMin * 100).roundToInt().toString()) }
         var fatMaxText by remember(loaded) { mutableStateOf((loaded.fatPercentMax * 100).roundToInt().toString()) }
         var manualCalorieText by remember(loaded) { mutableStateOf(loaded.manualCalorieTarget?.toString() ?: "") }
         var reminderEnabled by remember(loaded) { mutableStateOf(loaded.weightReminderEnabled) }
         var reminderHourText by remember(loaded) { mutableStateOf(loaded.weightReminderHour.toString()) }
         var reminderMinuteText by remember(loaded) { mutableStateOf(loaded.weightReminderMinute.toString()) }
+        var newMealName by remember { mutableStateOf("") }
 
         LazyColumn(
             modifier = Modifier
@@ -103,12 +113,18 @@ fun ProfileScreen() {
                         Text("Your daily targets", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Calories: ${state.targets.calorieTarget} kcal")
-                        Text("Protein: ${state.targets.proteinTargetGrams.roundToInt()} g")
                         Text(
-                            "Fat: ${state.targets.fatMinGrams.roundToInt()}-${state.targets.fatMaxGrams.roundToInt()} g " +
-                                "(target ${state.targets.fatTargetGrams.roundToInt()} g)"
+                            "Protein: ${state.targets.protein.minGrams.roundToInt()}-" +
+                                "${state.targets.protein.maxGrams.roundToInt()} g"
                         )
-                        Text("Carbs: ${state.targets.carbTargetGrams.roundToInt()} g")
+                        Text(
+                            "Fat: ${state.targets.fat.minGrams.roundToInt()}-" +
+                                "${state.targets.fat.maxGrams.roundToInt()} g"
+                        )
+                        Text(
+                            "Carbs: ${state.targets.carbs.minGrams.roundToInt()}-" +
+                                "${state.targets.carbs.maxGrams.roundToInt()} g"
+                        )
                     }
                 }
             }
@@ -143,8 +159,8 @@ fun ProfileScreen() {
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Sex", style = MaterialTheme.typography.bodyMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Sex.entries.forEach { option ->
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(Sex.entries.toList()) { option ->
                                 FilterChip(
                                     selected = sex == option,
                                     onClick = { sex = option },
@@ -165,8 +181,8 @@ fun ProfileScreen() {
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Goal", style = MaterialTheme.typography.bodyMedium)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Goal.entries.forEach { option ->
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(Goal.entries.toList()) { option ->
                                 FilterChip(
                                     selected = goal == option,
                                     onClick = { goal = option },
@@ -183,13 +199,22 @@ fun ProfileScreen() {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text("Nutrition targets", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = proteinPerKgText,
-                            onValueChange = { proteinPerKgText = it },
-                            label = { Text("Protein target (g per kg body weight)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = proteinMinText,
+                                onValueChange = { proteinMinText = it },
+                                label = { Text("Protein min (g/kg)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = proteinMaxText,
+                                onValueChange = { proteinMaxText = it },
+                                label = { Text("Protein max (g/kg)") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
@@ -207,6 +232,15 @@ fun ProfileScreen() {
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        if (sex == Sex.MALE) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Fat floor is clamped to at least 20% of calories for male sex " +
+                                    "regardless of this setting (testosterone-related).",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = manualCalorieText,
@@ -215,6 +249,49 @@ fun ProfileScreen() {
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth()
                         )
+                    }
+                }
+            }
+
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Meals", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        mealSlots.forEach { slot ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(slot.name)
+                                IconButton(onClick = {
+                                    scope.launch { container.mealSlotRepository.removeMeal(slot.id) }
+                                }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Remove ${slot.name}")
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = newMealName,
+                                onValueChange = { newMealName = it },
+                                label = { Text("New meal name") },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(onClick = {
+                                val name = newMealName.trim()
+                                if (name.isNotEmpty()) {
+                                    scope.launch { container.mealSlotRepository.addMeal(name) }
+                                    newMealName = ""
+                                }
+                            }) { Text("Add") }
+                        }
                     }
                 }
             }
@@ -265,7 +342,8 @@ fun ProfileScreen() {
                             sex = sex,
                             activityLevel = activityLevel,
                             goal = goal,
-                            proteinGramsPerKg = proteinPerKgText.toDoubleOrNull() ?: loaded.proteinGramsPerKg,
+                            proteinMinGramsPerKg = proteinMinText.toDoubleOrNull() ?: loaded.proteinMinGramsPerKg,
+                            proteinMaxGramsPerKg = proteinMaxText.toDoubleOrNull() ?: loaded.proteinMaxGramsPerKg,
                             fatPercentMin = (fatMinText.toDoubleOrNull() ?: (loaded.fatPercentMin * 100)) / 100.0,
                             fatPercentMax = (fatMaxText.toDoubleOrNull() ?: (loaded.fatPercentMax * 100)) / 100.0,
                             manualCalorieTarget = manualCalorieText.toIntOrNull(),

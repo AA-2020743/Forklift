@@ -28,8 +28,10 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -41,17 +43,16 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
-import com.caloriecalc.app.domain.MealType
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddFoodScreen(
-    mealType: MealType,
+    mealSlotId: Long,
     onBack: () -> Unit,
-    onScanBarcode: (MealType) -> Unit,
-    onManualEntry: (MealType) -> Unit,
-    onFoodSelected: (foodId: Long, mealType: MealType) -> Unit
+    onScanBarcode: (Long) -> Unit,
+    onManualEntry: (Long) -> Unit,
+    onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: AddFoodViewModel = viewModel(
@@ -64,13 +65,18 @@ fun AddFoodScreen(
     val onlineResults by viewModel.onlineResults.collectAsStateWithLifecycle()
     val isSearchingOnline by viewModel.isSearchingOnline.collectAsStateWithLifecycle()
 
+    var mealName by remember { mutableStateOf("meal") }
+    LaunchedEffect(mealSlotId) {
+        mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
+    }
+
     var selectedTab by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
     val onSelect: (FoodItem) -> Unit = { food ->
         scope.launch {
             val saved = viewModel.selectFood(food)
-            onFoodSelected(saved.id, mealType)
+            onFoodSelected(saved.id, mealSlotId)
         }
     }
 
@@ -78,17 +84,17 @@ fun AddFoodScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Add to ${mealType.displayName}") },
+                    title = { Text("Add to $mealName") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
-                        IconButton(onClick = { onScanBarcode(mealType) }) {
+                        IconButton(onClick = { onScanBarcode(mealSlotId) }) {
                             Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
                         }
-                        IconButton(onClick = { onManualEntry(mealType) }) {
+                        IconButton(onClick = { onManualEntry(mealSlotId) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Enter manually")
                         }
                     }

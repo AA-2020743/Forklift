@@ -1,5 +1,7 @@
 package com.caloriecalc.app.ui.components
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,15 +10,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.domain.MacroProgress
@@ -24,8 +26,12 @@ import com.caloriecalc.app.domain.MacroStatus
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+/**
+ * Shows consumed grams against a healthy min-max range (not a single target to hit): a shaded
+ * band marks the range, and the filled bar shows how much of it has been eaten so far.
+ */
 @Composable
-fun MacroProgressRow(
+fun MacroRangeBar(
     label: String,
     progress: MacroProgress,
     modifier: Modifier = Modifier,
@@ -34,32 +40,55 @@ fun MacroProgressRow(
     Column(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             Text(
-                text = "${progress.consumedGrams.roundToInt()} / ${progress.targetGrams.roundToInt()} $unit",
+                text = "${progress.consumedGrams.roundToInt()} $unit " +
+                    "(${progress.minGrams.roundToInt()}-${progress.maxGrams.roundToInt()} $unit)",
                 style = MaterialTheme.typography.bodyMedium
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = progress.fractionOfTarget.coerceIn(0f, 1f),
+        Spacer(modifier = Modifier.height(6.dp))
+
+        val trackColor = MaterialTheme.colorScheme.surfaceVariant
+        val rangeBandColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+        val fillColor = progress.status.toColor()
+
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = progress.status.toColor(),
-            trackColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+                .height(10.dp)
+        ) {
+            val displayMax = maxOf(progress.maxGrams, progress.consumedGrams, 1.0) * 1.1
+            val barRadius = CornerRadius(size.height / 2)
+
+            drawRoundRect(color = trackColor, cornerRadius = barRadius)
+
+            val bandStartX = (progress.minGrams / displayMax).toFloat() * size.width
+            val bandEndX = (progress.maxGrams / displayMax).toFloat() * size.width
+            drawRoundRect(
+                color = rangeBandColor,
+                topLeft = Offset(bandStartX, 0f),
+                size = Size((bandEndX - bandStartX).coerceAtLeast(0f), size.height)
+            )
+
+            val fillWidth = (progress.consumedGrams / displayMax).toFloat().coerceIn(0f, 1f) * size.width
+            drawRoundRect(
+                color = fillColor,
+                size = Size(fillWidth, size.height),
+                cornerRadius = barRadius
+            )
+        }
+
         val hint = when (progress.status) {
-            MacroStatus.BELOW_THRESHOLD -> "Below recommended threshold"
-            MacroStatus.OVER_TARGET -> "Over target"
-            else -> null
+            MacroStatus.BELOW_RANGE -> "Below healthy range"
+            MacroStatus.ABOVE_RANGE -> "Above range"
+            MacroStatus.IN_RANGE -> null
         }
         if (hint != null) {
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = hint, color = progress.status.toColor(), style = MaterialTheme.typography.labelSmall)
+            Text(text = hint, color = fillColor, style = MaterialTheme.typography.labelSmall)
         }
     }
 }

@@ -18,4 +18,6 @@ class WeightRepository(private val dao: WeightLogDao) {
     suspend fun logWeight(epochDay: Long, weightKg: Double) {
         dao.upsert(WeightLog(epochDay = epochDay, weightKg = weightKg))
     }
+
+    suspend fun deleteForDay(epochDay: Long) = dao.deleteForDay(epochDay)
 }

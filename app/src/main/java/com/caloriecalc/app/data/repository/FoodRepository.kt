@@ -20,18 +20,42 @@ class FoodRepository(
 
     suspend fun setFavorite(id: Long, isFavorite: Boolean) = foodDao.setFavorite(id, isFavorite)
 
-    /** Looks up a scanned barcode locally first, then falls back to Open Food Facts. */
+    /**
+     * Looks up a scanned barcode locally first, then falls back to Open Food Facts.
+     *
+     * Tries a couple of equivalent barcode encodings — scanners sometimes return a 12-digit
+     * UPC-A code for a product Open Food Facts only has under its 13-digit EAN-13 form (a
+     * leading zero), or vice versa — before giving up. Coverage still varies a lot by region
+     * since it's a crowdsourced database; a genuine miss just means the product hasn't been
+     * contributed yet, and manual entry (remembered from then on) is the fallback.
+     */
     suspend fun lookupBarcode(barcode: String): FoodItem? {
-        foodDao.getByBarcode(barcode)?.let { return it }
-        return runCatching { api.getProduct(barcode) }
-            .getOrNull()
-            ?.takeIf { it.status == 1 }
-            ?.product
-            ?.toFoodItem(FoodSource.BARCODE_SCAN)
-            ?.let { food ->
+        val variants = barcodeVariants(barcode)
+
+        for (code in variants) {
+            foodDao.getByBarcode(code)?.let { return it }
+        }
+
+        for (code in variants) {
+            val food = runCatching { api.getProduct(code) }
+                .getOrNull()
+                ?.takeIf { it.status == 1 }
+                ?.product
+                ?.toFoodItem(FoodSource.BARCODE_SCAN)
+            if (food != null) {
                 val id = foodDao.insert(food)
-                food.copy(id = id)
+                return food.copy(id = id)
             }
+        }
+        return null
+    }
+
+    private fun barcodeVariants(barcode: String): List<String> {
+        val trimmed = barcode.trim()
+        val variants = linkedSetOf(trimmed)
+        if (trimmed.length == 12) variants.add("0$trimmed")
+        if (trimmed.length == 13 && trimmed.startsWith("0")) variants.add(trimmed.substring(1))
+        return variants.toList()
     }
 
     suspend fun searchOnline(query: String): List<FoodItem> =
