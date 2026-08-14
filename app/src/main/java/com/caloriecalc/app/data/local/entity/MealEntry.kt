@@ -1,5 +1,6 @@
 package com.caloriecalc.app.data.local.entity
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -39,5 +40,7 @@ data class MealEntry(
     val calories: Double,
     val protein: Double,
     val fat: Double,
-    val carbs: Double
+    val carbs: Double,
+    /** Absolute micronutrient amounts for the grams actually logged (not per 100g). */
+    @Embedded val micronutrients: Micronutrients = Micronutrients()
 )

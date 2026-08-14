@@ -2,14 +2,19 @@ package com.caloriecalc.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.caloriecalc.app.data.local.ApiKeyStore
 import com.caloriecalc.app.data.local.AppDatabase
+import com.caloriecalc.app.data.remote.GeminiClient
 import com.caloriecalc.app.data.remote.NetworkClient
+import com.caloriecalc.app.data.repository.BodyMeasurementRepository
 import com.caloriecalc.app.data.repository.FoodRepository
 import com.caloriecalc.app.data.repository.MealSlotRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
+import com.caloriecalc.app.data.repository.PhotoEstimationRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
 import com.caloriecalc.app.data.repository.WeightRepository
 import com.caloriecalc.app.data.repository.WorkoutRepository
+import com.caloriecalc.app.data.repository.WorkoutTemplateRepository
 import com.caloriecalc.app.reminder.ReminderScheduler
 
 /**
@@ -30,6 +35,9 @@ class AppContainer(context: Context) {
         .build()
 
     private val openFoodFactsApi = NetworkClient.createOpenFoodFactsApi()
+    private val geminiApi = GeminiClient.createApi()
+
+    val apiKeyStore: ApiKeyStore by lazy { ApiKeyStore(context.applicationContext) }
 
     val foodRepository: FoodRepository by lazy {
         FoodRepository(database.foodDao(), openFoodFactsApi)
@@ -51,8 +59,20 @@ class AppContainer(context: Context) {
         WeightRepository(database.weightLogDao())
     }
 
+    val bodyMeasurementRepository: BodyMeasurementRepository by lazy {
+        BodyMeasurementRepository(database.bodyMeasurementDao())
+    }
+
     val workoutRepository: WorkoutRepository by lazy {
         WorkoutRepository(database.exerciseDao(), database.workoutSessionDao(), database.setEntryDao())
+    }
+
+    val workoutTemplateRepository: WorkoutTemplateRepository by lazy {
+        WorkoutTemplateRepository(database.workoutTemplateDao(), workoutRepository)
+    }
+
+    val photoEstimationRepository: PhotoEstimationRepository by lazy {
+        PhotoEstimationRepository(geminiApi, apiKeyStore)
     }
 
     val reminderScheduler: ReminderScheduler by lazy {

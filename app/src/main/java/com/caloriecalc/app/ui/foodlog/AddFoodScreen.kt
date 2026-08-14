@@ -4,16 +4,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,12 +45,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +62,9 @@ fun AddFoodScreen(
     onBack: () -> Unit,
     onScanBarcode: (Long) -> Unit,
     onManualEntry: (Long) -> Unit,
-    onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit
+    onPhotoEstimate: (Long) -> Unit,
+    onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit,
+    onQuickAdded: (Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: AddFoodViewModel = viewModel(
@@ -71,6 +83,7 @@ fun AddFoodScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showQuickAddDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     val onSelect: (FoodItem) -> Unit = { food ->
@@ -91,6 +104,12 @@ fun AddFoodScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { onPhotoEstimate(mealSlotId) }) {
+                            Icon(Icons.Filled.CameraAlt, contentDescription = "Estimate from photo")
+                        }
+                        IconButton(onClick = { showQuickAddDialog = true }) {
+                            Icon(Icons.Filled.Bolt, contentDescription = "Quick add calories")
+                        }
                         IconButton(onClick = { onScanBarcode(mealSlotId) }) {
                             Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
                         }
@@ -135,6 +154,104 @@ fun AddFoodScreen(
                 else -> FoodListContent(frequent, onSelect, "No frequently used foods yet.")
             }
         }
+    }
+
+    if (showQuickAddDialog) {
+        var label by remember { mutableStateOf("") }
+        var calories by remember { mutableStateOf("") }
+        var protein by remember { mutableStateOf("") }
+        var fat by remember { mutableStateOf("") }
+        var carbs by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showQuickAddDialog = false },
+            title = { Text("Quick add calories") },
+            text = {
+                Column {
+                    Text(
+                        "For eating out or whenever you just know the calories.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = label,
+                        onValueChange = { label = it },
+                        label = { Text("Label (optional)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = calories,
+                        onValueChange = { calories = it },
+                        label = { Text("Calories") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = protein,
+                            onValueChange = { protein = it },
+                            label = { Text("Protein g") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = fat,
+                            onValueChange = { fat = it },
+                            label = { Text("Fat g") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = carbs,
+                            onValueChange = { carbs = it },
+                            label = { Text("Carbs g") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val cal = calories.toDoubleOrNull()
+                        if (cal != null) {
+                            scope.launch {
+                                // Store as "per 100g" = the whole logged amount, then log exactly
+                                // 100g of it — a simple way to reuse the existing per-100g model
+                                // for a food whose total amount is what was actually typed.
+                                val food = container.foodRepository.createManualFood(
+                                    name = label.trim().ifBlank { "Quick add" },
+                                    brand = null,
+                                    caloriesPer100g = cal,
+                                    proteinPer100g = protein.toDoubleOrNull() ?: 0.0,
+                                    fatPer100g = fat.toDoubleOrNull() ?: 0.0,
+                                    carbsPer100g = carbs.toDoubleOrNull() ?: 0.0,
+                                    servingSizeGrams = null,
+                                    servingName = null
+                                )
+                                container.nutritionLogRepository.logFood(
+                                    food,
+                                    mealSlotId,
+                                    LocalDate.now().toEpochDay(),
+                                    100.0
+                                )
+                                onQuickAdded(mealSlotId)
+                            }
+                        }
+                        showQuickAddDialog = false
+                    },
+                    enabled = calories.toDoubleOrNull() != null
+                ) { Text("Log") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showQuickAddDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }
 

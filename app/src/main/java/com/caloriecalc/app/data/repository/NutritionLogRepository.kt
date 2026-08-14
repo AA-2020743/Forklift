@@ -38,7 +38,8 @@ class NutritionLogRepository(
             calories = food.caloriesPer100g * factor,
             protein = food.proteinPer100g * factor,
             fat = food.fatPer100g * factor,
-            carbs = food.carbsPer100g * factor
+            carbs = food.carbsPer100g * factor,
+            micronutrients = food.micronutrients.scaledBy(factor)
         )
         mealEntryDao.insert(entry)
         foodDao.markUsed(food.id, loggedAt)

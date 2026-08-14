@@ -1,5 +1,6 @@
 package com.caloriecalc.app.data.local.entity
 
+import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -19,6 +20,8 @@ data class FoodItem(
     val proteinPer100g: Double,
     val fatPer100g: Double,
     val carbsPer100g: Double,
+    /** Per-100g micronutrients, when known. */
+    @Embedded val micronutrients: Micronutrients = Micronutrients(),
     /** Grams represented by one "serving", if the product defines one (e.g. from Open Food Facts). */
     val servingSizeGrams: Double? = null,
     val servingName: String? = null,
@@ -29,4 +32,4 @@ data class FoodItem(
     val createdAtEpochMillis: Long = System.currentTimeMillis()
 )
 
-enum class FoodSource { BARCODE_SCAN, SEARCH, MANUAL }
+enum class FoodSource { BARCODE_SCAN, SEARCH, MANUAL, AI_ESTIMATE }

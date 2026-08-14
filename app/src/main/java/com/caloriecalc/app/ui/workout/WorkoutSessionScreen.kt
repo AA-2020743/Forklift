@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -47,10 +48,13 @@ fun WorkoutSessionScreen(
 ) {
     val container = rememberAppContainer()
     val viewModel: WorkoutSessionViewModel = viewModel(
-        factory = SimpleViewModelFactory { WorkoutSessionViewModel(sessionId, container.workoutRepository) }
+        factory = SimpleViewModelFactory {
+            WorkoutSessionViewModel(sessionId, container.workoutRepository, container.workoutTemplateRepository)
+        }
     )
     val session by viewModel.session.collectAsStateWithLifecycle()
     val groups by viewModel.groupedSets.collectAsStateWithLifecycle()
+    val planned by viewModel.plannedExercises.collectAsStateWithLifecycle()
 
     val title = session?.let {
         LocalDate.ofEpochDay(it.epochDay).format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
@@ -71,7 +75,7 @@ fun WorkoutSessionScreen(
             }
         }
     ) { padding ->
-        if (groups.isEmpty()) {
+        if (groups.isEmpty() && planned.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -89,6 +93,29 @@ fun WorkoutSessionScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (planned.isNotEmpty()) {
+                    item { Text("Planned", style = MaterialTheme.typography.titleMedium) }
+                    items(planned, key = { "planned_${it.id}" }) { exercise ->
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(exercise.name)
+                                Button(onClick = { onExerciseClick(sessionId, exercise.id) }) {
+                                    Text("Log")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (groups.isNotEmpty()) {
+                    item { Text("Logged", style = MaterialTheme.typography.titleMedium) }
+                }
                 items(groups, key = { it.exercise.id }) { group ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),

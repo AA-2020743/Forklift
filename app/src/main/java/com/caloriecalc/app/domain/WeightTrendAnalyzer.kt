@@ -9,8 +9,12 @@ data class WeightTrendResult(
     val weeklyChangeKg: Double?,
     val averageDailyCalories: Double?,
     val estimatedMaintenanceCalories: Int?,
-    val suggestion: String
+    val suggestion: String,
+    /** A concrete kcal/day delta to apply to the calorie target, if the trend suggests one. */
+    val suggestedCalorieAdjustment: Int? = null
 )
+
+private data class Suggestion(val text: String, val adjustmentKcal: Int? = null)
 
 /**
  * Correlates the observed weight trend against logged calorie intake to sanity-check
@@ -21,6 +25,9 @@ object WeightTrendAnalyzer {
 
     /** Roughly 7700 kcal per kg of body fat. */
     private const val KCAL_PER_KG = 7700.0
+
+    /** The representative kcal/day nudge offered by the "apply" action (matches the "150-250" text ranges). */
+    private const val STANDARD_ADJUSTMENT = 200
 
     fun analyze(
         weightLogsInWindow: List<WeightLog>,
@@ -55,7 +62,13 @@ object WeightTrendAnalyzer {
 
         val suggestion = buildSuggestion(goal, weeklyChangeKg, pctPerWeek, estimatedMaintenance, calorieTarget)
 
-        return WeightTrendResult(weeklyChangeKg, averageDailyCalories, estimatedMaintenance, suggestion)
+        return WeightTrendResult(
+            weeklyChangeKg,
+            averageDailyCalories,
+            estimatedMaintenance,
+            suggestion.text,
+            suggestion.adjustmentKcal
+        )
     }
 
     private fun buildSuggestion(
@@ -64,7 +77,7 @@ object WeightTrendAnalyzer {
         pctPerWeek: Double,
         estimatedMaintenance: Int?,
         calorieTarget: Int
-    ): String {
+    ): Suggestion {
         val change = format(weeklyChangeKg)
         return when (goal) {
             Goal.LOSE -> when {
@@ -72,37 +85,74 @@ object WeightTrendAnalyzer {
                     "Your weight is roughly flat ($change kg/week) even near your calorie target.",
                     estimatedMaintenance, calorieTarget, lower = true
                 )
-                pctPerWeek < -1.0 -> "You're losing faster than the recommended 0.5-1% of body weight per week " +
-                    "($change kg/week). Consider adding 150-250 kcal/day to protect muscle mass."
-                else -> "Weight trend ($change kg/week) is in a healthy range for fat loss. Keep it up."
+                pctPerWeek < -1.0 -> Suggestion(
+                    "You're losing faster than the recommended 0.5-1% of body weight per week " +
+                        "($change kg/week). Consider adding 150-250 kcal/day to protect muscle mass.",
+                    STANDARD_ADJUSTMENT
+                )
+                else -> Suggestion("Weight trend ($change kg/week) is in a healthy range for fat loss. Keep it up.")
             }
             Goal.GAIN -> when {
                 weeklyChangeKg < 0.05 -> maintenanceHint(
                     "Weight isn't moving up much on your current intake ($change kg/week).",
                     estimatedMaintenance, calorieTarget, lower = false
                 )
-                pctPerWeek > 0.5 -> "You're gaining faster than the ~0.25-0.5% of body weight per week guideline for " +
-                    "lean gains ($change kg/week) — likely adding more fat than needed. Consider trimming 150-250 kcal/day."
-                else -> "Weight trend ($change kg/week) is in a good range for a lean bulk. Keep it up."
+                pctPerWeek > 0.5 -> Suggestion(
+                    "You're gaining faster than the ~0.25-0.5% of body weight per week guideline for " +
+                        "lean gains ($change kg/week) — likely adding more fat than needed. Consider trimming 150-250 kcal/day.",
+                    -STANDARD_ADJUSTMENT
+                )
+                else -> Suggestion("Weight trend ($change kg/week) is in a good range for a lean bulk. Keep it up.")
             }
             Goal.MAINTAIN -> when {
                 abs(pctPerWeek) > 0.3 -> {
                     val direction = if (weeklyChangeKg > 0) "up" else "down"
-                    "Weight is drifting $direction ($change kg/week) while aiming to maintain. Consider adjusting " +
-                        "intake by ${if (weeklyChangeKg > 0) "-150 to -250" else "+150 to +250"} kcal/day."
+                    Suggestion(
+                        "Weight is drifting $direction ($change kg/week) while aiming to maintain. Consider adjusting " +
+                            "intake by ${if (weeklyChangeKg > 0) "-150 to -250" else "+150 to +250"} kcal/day.",
+                        if (weeklyChangeKg > 0) -STANDARD_ADJUSTMENT else STANDARD_ADJUSTMENT
+                    )
                 }
-                else -> "Weight is stable ($change kg/week) — nice consistency."
+                else -> Suggestion("Weight is stable ($change kg/week) — nice consistency.")
+            }
+            Goal.RECOMPOSITION -> when {
+                pctPerWeek < -0.75 -> Suggestion(
+                    "You're losing weight faster than ideal for a recomposition ($change kg/week), risking muscle " +
+                        "along with fat. Consider adding 150-250 kcal/day.",
+                    STANDARD_ADJUSTMENT
+                )
+                weeklyChangeKg > 0.15 -> Suggestion(
+                    "Weight is trending up ($change kg/week), more than a recomposition calls for. Consider " +
+                        "trimming 150-250 kcal/day.",
+                    -STANDARD_ADJUSTMENT
+                )
+                else -> Suggestion("Weight trend ($change kg/week) fits a recomposition — roughly flat to a slow loss. Keep it up.")
+            }
+            Goal.RECOMPOSITION_LEAN_BULK -> when {
+                weeklyChangeKg < 0.05 -> maintenanceHint(
+                    "Weight isn't moving up much on your current intake ($change kg/week).",
+                    estimatedMaintenance, calorieTarget, lower = false
+                )
+                pctPerWeek > 0.35 -> Suggestion(
+                    "You're gaining faster than a lean-tilted recomposition calls for ($change kg/week). Consider " +
+                        "trimming 150-250 kcal/day.",
+                    -STANDARD_ADJUSTMENT
+                )
+                else -> Suggestion("Weight trend ($change kg/week) fits a lean bulking tilt. Keep it up.")
             }
         }
     }
 
-    private fun maintenanceHint(prefix: String, estimatedMaintenance: Int?, calorieTarget: Int, lower: Boolean): String {
-        if (estimatedMaintenance == null) return "$prefix Log a few more days of food to estimate your real maintenance calories."
+    private fun maintenanceHint(prefix: String, estimatedMaintenance: Int?, calorieTarget: Int, lower: Boolean): Suggestion {
+        if (estimatedMaintenance == null) {
+            return Suggestion("$prefix Log a few more days of food to estimate your real maintenance calories.")
+        }
         val diff = estimatedMaintenance - calorieTarget
         val direction = if (lower) "lower your intake" else "raise your intake"
-        return "$prefix Based on your logs, your real maintenance looks closer to ~$estimatedMaintenance kcal/day " +
+        val text = "$prefix Based on your logs, your real maintenance looks closer to ~$estimatedMaintenance kcal/day " +
             "(about ${if (diff >= 0) "+" else ""}$diff vs. your $calorieTarget kcal target) — consider adjusting to " +
             "$direction by 150-250 kcal/day."
+        return Suggestion(text, if (lower) -STANDARD_ADJUSTMENT else STANDARD_ADJUSTMENT)
     }
 
     private fun format(value: Double): String = String.format(Locale.US, "%.2f", value)

@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -99,6 +100,8 @@ fun ProfileScreen() {
         var reminderHourText by remember(loaded) { mutableStateOf(loaded.weightReminderHour.toString()) }
         var reminderMinuteText by remember(loaded) { mutableStateOf(loaded.weightReminderMinute.toString()) }
         var newMealName by remember { mutableStateOf("") }
+        var geminiApiKeyText by remember { mutableStateOf(container.apiKeyStore.getGeminiApiKey() ?: "") }
+        var geminiKeySaved by remember { mutableStateOf(false) }
 
         LazyColumn(
             modifier = Modifier
@@ -291,6 +294,40 @@ fun ProfileScreen() {
                                     newMealName = ""
                                 }
                             }) { Text("Add") }
+                        }
+                    }
+                }
+            }
+
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("AI photo estimation", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Free Gemini API key from Google AI Studio (aistudio.google.com), used only to " +
+                                "estimate calories from meal photos you choose to send. Stored encrypted on-device.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = geminiApiKeyText,
+                            onValueChange = { geminiApiKeyText = it; geminiKeySaved = false },
+                            label = { Text("Gemini API key") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                container.apiKeyStore.setGeminiApiKey(geminiApiKeyText.trim())
+                                geminiKeySaved = true
+                            }) { Text("Save key") }
+                            if (geminiKeySaved) {
+                                Text("Saved", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
+                            }
                         }
                     }
                 }

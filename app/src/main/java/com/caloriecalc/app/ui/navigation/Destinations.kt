@@ -12,6 +12,7 @@ sealed class Screen(val route: String) {
     data object Workouts : Screen("workouts")
     data object Weight : Screen("weight")
     data object Profile : Screen("profile")
+    data object Micronutrients : Screen("micronutrients")
 
     data object MealLog : Screen("meal_log/{mealSlotId}") {
         fun createRoute(mealSlotId: Long) = "meal_log/$mealSlotId"
@@ -27,6 +28,10 @@ sealed class Screen(val route: String) {
 
     data object ManualFoodEntry : Screen("manual_food_entry/{mealSlotId}") {
         fun createRoute(mealSlotId: Long) = "manual_food_entry/$mealSlotId"
+    }
+
+    data object PhotoEstimate : Screen("photo_estimate/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "photo_estimate/$mealSlotId"
     }
 
     data object Quantity : Screen("quantity/{foodId}/{mealSlotId}") {
@@ -47,6 +52,16 @@ sealed class Screen(val route: String) {
 
     data object ExerciseHistory : Screen("exercise_history/{exerciseId}") {
         fun createRoute(exerciseId: Long) = "exercise_history/$exerciseId"
+    }
+
+    data object Templates : Screen("templates")
+
+    data object TemplateEditor : Screen("template_editor/{templateId}") {
+        fun createRoute(templateId: Long) = "template_editor/$templateId"
+    }
+
+    data object TemplateExercisePicker : Screen("template_exercise_picker/{templateId}") {
+        fun createRoute(templateId: Long) = "template_exercise_picker/$templateId"
     }
 }
 

@@ -27,9 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.caloriecalc.app.data.local.entity.BodyMeasurement
 import com.caloriecalc.app.data.local.entity.WeightLog
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
@@ -45,6 +48,7 @@ import com.caloriecalc.app.ui.components.LineChart
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +63,10 @@ fun WeightScreen() {
 
     var weightText by remember { mutableStateOf("") }
     var editingLog by remember { mutableStateOf<WeightLog?>(null) }
+    val measurements by container.bodyMeasurementRepository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
+    var showMeasurementDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val today = LocalDate.now().toEpochDay()
 
     val weightSeries = listOf(
         ChartSeries(
@@ -151,6 +159,34 @@ fun WeightScreen() {
                             Spacer(modifier = Modifier.height(8.dp))
                         }
                         Text(trend?.suggestion ?: "Log your weight to see trend insights.")
+                        val adjustment = trend?.suggestedCalorieAdjustment
+                        if (adjustment != null && adjustment != 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.applySuggestedAdjustment() }) {
+                                Text("Apply ${if (adjustment > 0) "+" else ""}$adjustment kcal/day")
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
+                val latestMeasurement = measurements.firstOrNull()
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text("Body measurements", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            latestMeasurement?.let {
+                                "Latest (${LocalDate.ofEpochDay(it.epochDay).format(DateTimeFormatter.ofPattern("MMM d"))}): " +
+                                    measurementSummary(it)
+                            } ?: "No measurements yet",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { showMeasurementDialog = true }) {
+                            Text("Add / edit today")
+                        }
                     }
                 }
             }
@@ -212,6 +248,87 @@ fun WeightScreen() {
             }
         )
     }
+
+    if (showMeasurementDialog) {
+        var todayMeasurement by remember { mutableStateOf<BodyMeasurement?>(null) }
+        var loaded by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            todayMeasurement = container.bodyMeasurementRepository.getForDay(today)
+            loaded = true
+        }
+
+        if (loaded) {
+            var waistText by remember { mutableStateOf(todayMeasurement?.waistCm?.toString() ?: "") }
+            var chestText by remember { mutableStateOf(todayMeasurement?.chestCm?.toString() ?: "") }
+            var armsText by remember { mutableStateOf(todayMeasurement?.armsCm?.toString() ?: "") }
+            var thighsText by remember { mutableStateOf(todayMeasurement?.thighsCm?.toString() ?: "") }
+            var hipsText by remember { mutableStateOf(todayMeasurement?.hipsCm?.toString() ?: "") }
+            var neckText by remember { mutableStateOf(todayMeasurement?.neckCm?.toString() ?: "") }
+
+            AlertDialog(
+                onDismissRequest = { showMeasurementDialog = false },
+                title = { Text("Today's measurements (cm)") },
+                text = {
+                    Column {
+                        MeasurementField("Waist", waistText) { waistText = it }
+                        MeasurementField("Chest", chestText) { chestText = it }
+                        MeasurementField("Arms", armsText) { armsText = it }
+                        MeasurementField("Thighs", thighsText) { thighsText = it }
+                        MeasurementField("Hips", hipsText) { hipsText = it }
+                        MeasurementField("Neck", neckText) { neckText = it }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        scope.launch {
+                            container.bodyMeasurementRepository.upsert(
+                                BodyMeasurement(
+                                    epochDay = today,
+                                    waistCm = waistText.toDoubleOrNull(),
+                                    chestCm = chestText.toDoubleOrNull(),
+                                    armsCm = armsText.toDoubleOrNull(),
+                                    thighsCm = thighsText.toDoubleOrNull(),
+                                    hipsCm = hipsText.toDoubleOrNull(),
+                                    neckCm = neckText.toDoubleOrNull()
+                                )
+                            )
+                        }
+                        showMeasurementDialog = false
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        scope.launch { container.bodyMeasurementRepository.deleteForDay(today) }
+                        showMeasurementDialog = false
+                    }) { Text("Delete") }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MeasurementField(label: String, value: String, onValueChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth()
+    )
+    Spacer(modifier = Modifier.height(4.dp))
+}
+
+private fun measurementSummary(m: BodyMeasurement): String {
+    val parts = buildList {
+        m.waistCm?.let { add("waist ${it}cm") }
+        m.chestCm?.let { add("chest ${it}cm") }
+        m.armsCm?.let { add("arms ${it}cm") }
+        m.thighsCm?.let { add("thighs ${it}cm") }
+        m.hipsCm?.let { add("hips ${it}cm") }
+        m.neckCm?.let { add("neck ${it}cm") }
+    }
+    return if (parts.isEmpty()) "no values" else parts.joinToString(", ")
 }
 
 private fun formatSigned(value: Double): String {

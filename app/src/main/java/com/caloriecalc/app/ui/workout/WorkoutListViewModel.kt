@@ -3,7 +3,9 @@ package com.caloriecalc.app.ui.workout
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.caloriecalc.app.data.local.entity.WorkoutSession
+import com.caloriecalc.app.data.local.entity.WorkoutTemplate
 import com.caloriecalc.app.data.repository.WorkoutRepository
+import com.caloriecalc.app.data.repository.WorkoutTemplateRepository
 import com.caloriecalc.app.domain.MuscleCoverageAnalyzer
 import com.caloriecalc.app.domain.MuscleCoverageReport
 import java.time.LocalDate
@@ -14,7 +16,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class WorkoutListViewModel(
-    private val workoutRepository: WorkoutRepository
+    private val workoutRepository: WorkoutRepository,
+    private val workoutTemplateRepository: WorkoutTemplateRepository
 ) : ViewModel() {
 
     private val today = LocalDate.now().toEpochDay()
@@ -26,6 +29,9 @@ class WorkoutListViewModel(
     val sessions: StateFlow<List<WorkoutSession>> = workoutRepository.observeSessions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val templates: StateFlow<List<WorkoutTemplate>> = workoutTemplateRepository.observeTemplates()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val coverageReport: StateFlow<MuscleCoverageReport?> = combine(
         workoutRepository.observeSetsInRange(coverageWindowStart, today),
         workoutRepository.observeExercises()
@@ -34,9 +40,9 @@ class WorkoutListViewModel(
         else MuscleCoverageAnalyzer.analyze(sets, exercises.associateBy { it.id }, exercises)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    fun startSession(onCreated: (Long) -> Unit) {
+    fun startSession(templateId: Long? = null, onCreated: (Long) -> Unit) {
         viewModelScope.launch {
-            val id = workoutRepository.startSession(LocalDate.now().toEpochDay())
+            val id = workoutRepository.startSession(LocalDate.now().toEpochDay(), templateId = templateId)
             onCreated(id)
         }
     }

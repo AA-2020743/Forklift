@@ -2,6 +2,7 @@ package com.caloriecalc.app.ui.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.caloriecalc.app.data.local.dao.SetWithSessionDate
 import com.caloriecalc.app.data.local.entity.Exercise
 import com.caloriecalc.app.data.local.entity.SetEntry
 import com.caloriecalc.app.data.repository.WorkoutRepository
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -22,13 +24,29 @@ class LogSetViewModel(
     private val _exercise = MutableStateFlow<Exercise?>(null)
     val exercise: StateFlow<Exercise?> = _exercise.asStateFlow()
 
+    private val _currentSessionEpochDay = MutableStateFlow<Long?>(null)
+
     val sets: StateFlow<List<SetEntry>> = workoutRepository.observeSetsForSession(sessionId)
         .map { list -> list.filter { it.exerciseId == exerciseId }.sortedBy { it.setNumber } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** The most recent *other* session's sets for this exercise, as a progressive-overload cue. */
+    val lastTimeSets: StateFlow<List<SetWithSessionDate>> = combine(
+        workoutRepository.observeExerciseHistory(exerciseId),
+        _currentSessionEpochDay
+    ) { history, currentDay ->
+        history
+            .filter { currentDay == null || it.epochDay != currentDay }
+            .groupBy { it.epochDay }
+            .maxByOrNull { it.key }
+            ?.value
+            .orEmpty()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         viewModelScope.launch {
             _exercise.value = workoutRepository.getExerciseById(exerciseId)
+            _currentSessionEpochDay.value = workoutRepository.getSession(sessionId)?.epochDay
         }
     }
 

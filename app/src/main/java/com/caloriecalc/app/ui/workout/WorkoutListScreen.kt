@@ -12,16 +12,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -35,20 +42,33 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutListScreen(
-    onSessionClick: (Long) -> Unit
+    onSessionClick: (Long) -> Unit,
+    onManageTemplates: () -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: WorkoutListViewModel = viewModel(
-        factory = SimpleViewModelFactory { WorkoutListViewModel(container.workoutRepository) }
+        factory = SimpleViewModelFactory { WorkoutListViewModel(container.workoutRepository, container.workoutTemplateRepository) }
     )
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val templates by viewModel.templates.collectAsStateWithLifecycle()
     val coverage by viewModel.coverageReport.collectAsStateWithLifecycle()
     val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 
+    var showStartDialog by remember { mutableStateOf(false) }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Lifting") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Lifting") },
+                actions = {
+                    IconButton(onClick = onManageTemplates) {
+                        Icon(Icons.Filled.ListAlt, contentDescription = "Templates")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.startSession(onSessionClick) }) {
+            FloatingActionButton(onClick = { showStartDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = "Start workout")
             }
         }
@@ -101,5 +121,36 @@ fun WorkoutListScreen(
                 }
             }
         }
+    }
+
+    if (showStartDialog) {
+        AlertDialog(
+            onDismissRequest = { showStartDialog = false },
+            title = { Text("Start workout") },
+            text = {
+                Column {
+                    TextButton(onClick = {
+                        showStartDialog = false
+                        viewModel.startSession(onCreated = onSessionClick)
+                    }) { Text("Blank workout") }
+                    if (templates.isNotEmpty()) {
+                        Text(
+                            "From a template",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        templates.forEach { template ->
+                            TextButton(onClick = {
+                                showStartDialog = false
+                                viewModel.startSession(templateId = template.id, onCreated = onSessionClick)
+                            }) { Text(template.name) }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showStartDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 }

@@ -34,7 +34,8 @@ import com.caloriecalc.app.ui.components.MacroRangeBar
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    onMealClick: (mealSlotId: Long) -> Unit
+    onMealClick: (mealSlotId: Long) -> Unit,
+    onMicronutrientsClick: () -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: DashboardViewModel = viewModel(
@@ -80,6 +81,21 @@ fun DashboardScreen(
                         MacroRangeBar(label = "Fat", progress = state.fatProgress)
                         Spacer(modifier = Modifier.height(12.dp))
                         MacroRangeBar(label = "Carbs", progress = state.carbProgress)
+                    }
+                }
+            }
+
+            item {
+                Card(modifier = Modifier.fillMaxWidth(), onClick = onMicronutrientsClick) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Micronutrients", fontWeight = FontWeight.Medium)
+                        Text("View details", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }

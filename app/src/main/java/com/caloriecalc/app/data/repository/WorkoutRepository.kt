@@ -34,8 +34,8 @@ class WorkoutRepository(
 
     suspend fun getSession(id: Long): WorkoutSession? = sessionDao.getById(id)
 
-    suspend fun startSession(epochDay: Long, name: String? = null): Long =
-        sessionDao.insert(WorkoutSession(epochDay = epochDay, name = name))
+    suspend fun startSession(epochDay: Long, name: String? = null, templateId: Long? = null): Long =
+        sessionDao.insert(WorkoutSession(epochDay = epochDay, name = name, templateId = templateId))
 
     suspend fun deleteSession(session: WorkoutSession) = sessionDao.delete(session)
 

@@ -37,9 +37,8 @@ import com.caloriecalc.app.domain.MuscleGroup
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExercisePickerScreen(
-    sessionId: Long,
     onBack: () -> Unit,
-    onExerciseSelected: (sessionId: Long, exerciseId: Long) -> Unit
+    onExerciseSelected: (exerciseId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: ExercisePickerViewModel = viewModel(
@@ -105,7 +104,7 @@ fun ExercisePickerScreen(
             items(filtered, key = { it.id }) { exercise ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onExerciseSelected(sessionId, exercise.id) }
+                    onClick = { onExerciseSelected(exercise.id) }
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(exercise.name, style = MaterialTheme.typography.bodyLarge)

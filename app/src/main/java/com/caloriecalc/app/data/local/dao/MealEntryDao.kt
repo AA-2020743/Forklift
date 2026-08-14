@@ -11,7 +11,19 @@ data class DayMacroTotals(
     val calories: Double,
     val protein: Double,
     val fat: Double,
-    val carbs: Double
+    val carbs: Double,
+    val fiberGrams: Double,
+    val sugarGrams: Double,
+    val saturatedFatGrams: Double,
+    val sodiumMg: Double,
+    val potassiumMg: Double,
+    val calciumMg: Double,
+    val ironMg: Double,
+    val vitaminCMg: Double,
+    val vitaminDMcg: Double,
+    val vitaminB12Mcg: Double,
+    val magnesiumMg: Double,
+    val zincMg: Double
 )
 
 @Dao
@@ -34,7 +46,19 @@ interface MealEntryDao {
         SELECT COALESCE(SUM(calories), 0) AS calories,
                COALESCE(SUM(protein), 0) AS protein,
                COALESCE(SUM(fat), 0) AS fat,
-               COALESCE(SUM(carbs), 0) AS carbs
+               COALESCE(SUM(carbs), 0) AS carbs,
+               COALESCE(SUM(fiberGrams), 0) AS fiberGrams,
+               COALESCE(SUM(sugarGrams), 0) AS sugarGrams,
+               COALESCE(SUM(saturatedFatGrams), 0) AS saturatedFatGrams,
+               COALESCE(SUM(sodiumMg), 0) AS sodiumMg,
+               COALESCE(SUM(potassiumMg), 0) AS potassiumMg,
+               COALESCE(SUM(calciumMg), 0) AS calciumMg,
+               COALESCE(SUM(ironMg), 0) AS ironMg,
+               COALESCE(SUM(vitaminCMg), 0) AS vitaminCMg,
+               COALESCE(SUM(vitaminDMcg), 0) AS vitaminDMcg,
+               COALESCE(SUM(vitaminB12Mcg), 0) AS vitaminB12Mcg,
+               COALESCE(SUM(magnesiumMg), 0) AS magnesiumMg,
+               COALESCE(SUM(zincMg), 0) AS zincMg
         FROM meal_entries WHERE epochDay = :epochDay
         """
     )

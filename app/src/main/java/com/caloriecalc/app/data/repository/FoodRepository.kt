@@ -3,6 +3,8 @@ package com.caloriecalc.app.data.repository
 import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.FoodSource
+import com.caloriecalc.app.data.local.entity.Micronutrients
+import com.caloriecalc.app.data.remote.NutrimentsDto
 import com.caloriecalc.app.data.remote.OpenFoodFactsApi
 import com.caloriecalc.app.data.remote.ProductDto
 import kotlinx.coroutines.flow.Flow
@@ -111,8 +113,25 @@ private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {
         proteinPer100g = nutriments.proteins100g ?: 0.0,
         fatPer100g = nutriments.fat100g ?: 0.0,
         carbsPer100g = nutriments.carbohydrates100g ?: 0.0,
+        micronutrients = nutriments.toMicronutrients(),
         servingSizeGrams = servingQuantity?.toDoubleOrNull(),
         servingName = servingSize,
         source = source
     )
 }
+
+/** Open Food Facts reports every nutriment in grams; convert the trace ones to mg/mcg. */
+private fun NutrimentsDto.toMicronutrients(): Micronutrients = Micronutrients(
+    fiberGrams = fiber100g,
+    sugarGrams = sugars100g,
+    saturatedFatGrams = saturatedFat100g,
+    sodiumMg = sodium100g?.times(1000),
+    potassiumMg = potassium100g?.times(1000),
+    calciumMg = calcium100g?.times(1000),
+    ironMg = iron100g?.times(1000),
+    vitaminCMg = vitaminC100g?.times(1000),
+    vitaminDMcg = vitaminD100g?.times(1_000_000),
+    vitaminB12Mcg = vitaminB12100g?.times(1_000_000),
+    magnesiumMg = magnesium100g?.times(1000),
+    zincMg = zinc100g?.times(1000)
+)

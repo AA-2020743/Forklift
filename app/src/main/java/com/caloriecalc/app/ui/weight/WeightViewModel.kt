@@ -76,4 +76,14 @@ class WeightViewModel(
     fun deleteWeightForDay(epochDay: Long) {
         viewModelScope.launch { weightRepository.deleteForDay(epochDay) }
     }
+
+    /** Applies the trend-suggested calorie adjustment as a new manual calorie target override. */
+    fun applySuggestedAdjustment() {
+        viewModelScope.launch {
+            val adjustment = uiState.value.trend?.suggestedCalorieAdjustment ?: return@launch
+            val profile = profileRepository.getProfile()
+            val currentTarget = profile.manualCalorieTarget ?: NutritionCalculator.computeTargets(profile).calorieTarget
+            profileRepository.updateProfile(profile.copy(manualCalorieTarget = currentTarget + adjustment))
+        }
+    }
 }
