@@ -2,6 +2,7 @@ package com.caloriecalc.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.caloriecalc.app.data.local.ALL_MIGRATIONS
 import com.caloriecalc.app.data.local.ApiKeyStore
 import com.caloriecalc.app.data.local.AppDatabase
 import com.caloriecalc.app.data.remote.GeminiClient
@@ -24,14 +25,16 @@ import com.caloriecalc.app.reminder.ReminderScheduler
  */
 class AppContainer(context: Context) {
 
-    // Pre-release app with no shipped user data to preserve across schema changes yet;
-    // destructive fallback avoids hand-writing a Migration for every dev-time schema tweak.
-    // Replace with real Migrations before this ships anywhere with real user data at stake.
+    // Real migrations (Migrations.kt) preserve on-device data (logged foods, workouts, weight
+    // history, etc.) across schema changes. Every future entity change must ship a matching
+    // Migration in ALL_MIGRATIONS — destructive fallback only covers a downgrade (installing
+    // an older build over a newer DB), which can't reasonably be migrated forward anyway.
     private val database: AppDatabase = Room.databaseBuilder(
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME
-    ).fallbackToDestructiveMigration()
+    ).addMigrations(*ALL_MIGRATIONS)
+        .fallbackToDestructiveMigrationOnDowngrade()
         .build()
 
     private val openFoodFactsApi = NetworkClient.createOpenFoodFactsApi()
