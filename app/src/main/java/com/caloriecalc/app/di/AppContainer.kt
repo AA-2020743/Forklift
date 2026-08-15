@@ -14,6 +14,7 @@ import com.caloriecalc.app.data.repository.MealSlotRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.PhotoEstimationRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
+import com.caloriecalc.app.data.repository.WaterRepository
 import com.caloriecalc.app.data.repository.WeightRepository
 import com.caloriecalc.app.data.repository.WorkoutRepository
 import com.caloriecalc.app.data.repository.WorkoutTemplateRepository
@@ -77,6 +78,10 @@ class AppContainer(context: Context) {
 
     val activityRepository: ActivityRepository by lazy {
         ActivityRepository(database.activityLogDao())
+    }
+
+    val waterRepository: WaterRepository by lazy {
+        WaterRepository(database.waterLogDao())
     }
 
     val photoEstimationRepository: PhotoEstimationRepository by lazy {

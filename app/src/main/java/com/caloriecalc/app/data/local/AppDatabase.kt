@@ -11,6 +11,7 @@ import com.caloriecalc.app.data.local.dao.MealEntryDao
 import com.caloriecalc.app.data.local.dao.MealSlotDao
 import com.caloriecalc.app.data.local.dao.SetEntryDao
 import com.caloriecalc.app.data.local.dao.UserProfileDao
+import com.caloriecalc.app.data.local.dao.WaterLogDao
 import com.caloriecalc.app.data.local.dao.WeightLogDao
 import com.caloriecalc.app.data.local.dao.WorkoutSessionDao
 import com.caloriecalc.app.data.local.dao.WorkoutTemplateDao
@@ -22,6 +23,7 @@ import com.caloriecalc.app.data.local.entity.MealEntry
 import com.caloriecalc.app.data.local.entity.MealSlot
 import com.caloriecalc.app.data.local.entity.SetEntry
 import com.caloriecalc.app.data.local.entity.UserProfile
+import com.caloriecalc.app.data.local.entity.WaterLog
 import com.caloriecalc.app.data.local.entity.WeightLog
 import com.caloriecalc.app.data.local.entity.WorkoutSession
 import com.caloriecalc.app.data.local.entity.WorkoutTemplate
@@ -40,9 +42,10 @@ import com.caloriecalc.app.data.local.entity.WorkoutTemplateExercise
         SetEntry::class,
         WorkoutTemplate::class,
         WorkoutTemplateExercise::class,
-        ActivityLog::class
+        ActivityLog::class,
+        WaterLog::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -58,6 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun setEntryDao(): SetEntryDao
     abstract fun workoutTemplateDao(): WorkoutTemplateDao
     abstract fun activityLogDao(): ActivityLogDao
+    abstract fun waterLogDao(): WaterLogDao
 
     companion object {
         const val DATABASE_NAME = "caloriecalc.db"

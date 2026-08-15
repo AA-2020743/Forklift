@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -23,8 +24,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Medication
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RiceBowl
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.WaterDrop
@@ -32,13 +33,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -74,6 +73,9 @@ import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.theme.StatusApproaching
+import com.caloriecalc.app.ui.theme.StatusBelowThreshold
+import com.caloriecalc.app.ui.theme.StatusOnTarget
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +92,8 @@ fun DashboardScreen(
                 container.nutritionLogRepository,
                 container.mealSlotRepository,
                 container.workoutRepository,
-                container.activityRepository
+                container.activityRepository,
+                container.waterRepository
             )
         }
     )
@@ -98,18 +101,16 @@ fun DashboardScreen(
     var showLogActivityDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Today") }) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onQuickAdd,
-                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 1.dp, pressedElevation = 3.dp)
-            ) {
-                Icon(Icons.Filled.QrCodeScanner, contentDescription = "Quickly scan or add a food")
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
+        topBar = {
+            TopAppBar(
+                title = { Text("Today") },
+                actions = {
+                    IconButton(onClick = onQuickAdd) {
+                        Icon(Icons.Filled.Add, contentDescription = "Scan or add a food")
+                    }
+                }
+            )
+        }
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -169,6 +170,64 @@ fun DashboardScreen(
                     ) {
                         SectionHeader(Icons.Filled.Medication, "Micronutrients")
                         Text("View details", color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SectionHeader(Icons.Filled.WaterDrop, "Water")
+                            Text(
+                                "${state.waterMl} / ${state.waterTargetMl} ml",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        val waterFraction = if (state.waterTargetMl <= 0) 0f
+                        else (state.waterMl.toFloat() / state.waterTargetMl)
+                        val waterColor = when {
+                            state.waterMl >= state.waterTargetMl -> StatusOnTarget
+                            waterFraction >= 0.5f -> StatusApproaching
+                            else -> StatusBelowThreshold
+                        }
+                        LinearProgressIndicator(
+                            progress = waterFraction.coerceIn(0f, 1f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(10.dp)
+                                .clip(RoundedCornerShape(5.dp)),
+                            color = waterColor,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            listOf(250, 500, 1000).forEach { amountMl ->
+                                OutlinedButton(onClick = { viewModel.addWater(amountMl) }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.WaterDrop,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(if (amountMl >= 1000) "+1L" else "+${amountMl}ml")
+                                }
+                            }
+                            Spacer(modifier = Modifier.weight(1f))
+                            IconButton(onClick = { viewModel.addWater(-250) }, enabled = state.waterMl > 0) {
+                                Icon(Icons.Filled.Remove, contentDescription = "Remove 250ml")
+                            }
+                        }
                     }
                 }
             }

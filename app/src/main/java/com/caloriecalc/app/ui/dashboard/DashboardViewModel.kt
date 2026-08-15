@@ -9,6 +9,7 @@ import com.caloriecalc.app.data.repository.ActivityRepository
 import com.caloriecalc.app.data.repository.MealSlotRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
+import com.caloriecalc.app.data.repository.WaterRepository
 import com.caloriecalc.app.data.repository.WorkoutRepository
 import com.caloriecalc.app.domain.ActivityCalculator
 import com.caloriecalc.app.domain.ActivityType
@@ -16,6 +17,7 @@ import com.caloriecalc.app.domain.MacroEvaluator
 import com.caloriecalc.app.domain.MacroProgress
 import com.caloriecalc.app.domain.MacroStatus
 import com.caloriecalc.app.domain.NutritionCalculator
+import com.caloriecalc.app.domain.WaterCalculator
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.SharingStarted
@@ -45,7 +47,9 @@ data class DashboardUiState(
     val mealSummaries: List<MealSummary> = emptyList(),
     val bodyWeightKg: Double = 75.0,
     val activityRows: List<ActivityRow> = emptyList(),
-    val totalCaloriesBurned: Int = 0
+    val totalCaloriesBurned: Int = 0,
+    val waterMl: Int = 0,
+    val waterTargetMl: Int = 2000
 )
 
 class DashboardViewModel(
@@ -53,24 +57,26 @@ class DashboardViewModel(
     nutritionLogRepository: NutritionLogRepository,
     mealSlotRepository: MealSlotRepository,
     workoutRepository: WorkoutRepository,
-    private val activityRepository: ActivityRepository
+    private val activityRepository: ActivityRepository,
+    private val waterRepository: WaterRepository
 ) : ViewModel() {
 
     private val today = LocalDate.now().toEpochDay()
 
-    private val activityAndSessions = combine(
+    private val activityAndWater = combine(
         workoutRepository.observeSessionsInRange(today, today),
-        activityRepository.observeForDay(today)
-    ) { sessions, activities -> sessions to activities }
+        activityRepository.observeForDay(today),
+        waterRepository.observeForDay(today)
+    ) { sessions, activities, water -> Triple(sessions, activities, water) }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         profileRepository.observeProfile(),
         nutritionLogRepository.totalsForDay(today),
         nutritionLogRepository.entriesForDay(today),
         mealSlotRepository.observeActive(),
-        activityAndSessions
-    ) { profile, totals, entries, mealSlots, sessionsAndActivities ->
-        val (sessions, activities) = sessionsAndActivities
+        activityAndWater
+    ) { profile, totals, entries, mealSlots, bundle ->
+        val (sessions, activities, water) = bundle
         val targets = NutritionCalculator.computeTargets(profile)
         val mealSummaries = mealSlots.map { slot ->
             val mealEntries = entries.filter { it.entry.mealSlotId == slot.id }
@@ -110,7 +116,9 @@ class DashboardViewModel(
             mealSummaries = mealSummaries,
             bodyWeightKg = profile.bodyWeightKg,
             activityRows = activityRows,
-            totalCaloriesBurned = totalBurned
+            totalCaloriesBurned = totalBurned,
+            waterMl = water?.amountMl ?: 0,
+            waterTargetMl = WaterCalculator.recommendedMl(profile)
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
@@ -129,5 +137,9 @@ class DashboardViewModel(
 
     fun deleteActivity(activity: ActivityLog) {
         viewModelScope.launch { activityRepository.deleteActivity(activity) }
+    }
+
+    fun addWater(deltaMl: Int) {
+        viewModelScope.launch { waterRepository.addWater(today, deltaMl) }
     }
 }
