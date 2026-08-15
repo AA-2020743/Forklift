@@ -40,4 +40,10 @@ class MealLogViewModel(
             nutritionLogRepository.deleteEntry(entryWithFood.entry)
         }
     }
+
+    fun updateEntryQuantity(entryWithFood: MealEntryWithFood, grams: Double) {
+        viewModelScope.launch {
+            nutritionLogRepository.updateEntryQuantity(entryWithFood.entry, entryWithFood.food, grams)
+        }
+    }
 }

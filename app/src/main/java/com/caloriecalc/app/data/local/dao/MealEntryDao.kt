@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.caloriecalc.app.data.local.entity.MealEntry
 import kotlinx.coroutines.flow.Flow
 
@@ -34,6 +35,9 @@ interface MealEntryDao {
 
     @Delete
     suspend fun delete(mealEntry: MealEntry)
+
+    @Update
+    suspend fun update(mealEntry: MealEntry)
 
     @Query("SELECT * FROM meal_entries WHERE epochDay = :epochDay ORDER BY loggedAtEpochMillis ASC")
     fun getEntriesForDay(epochDay: Long): Flow<List<MealEntry>>

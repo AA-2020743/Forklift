@@ -47,6 +47,22 @@ class NutritionLogRepository(
 
     suspend fun deleteEntry(entry: MealEntry) = mealEntryDao.delete(entry)
 
+    /** Re-derives calories/macros/micronutrients for a logged entry from its food's per-100g
+     * values at a new gram amount — used when correcting how much of something was actually eaten. */
+    suspend fun updateEntryQuantity(entry: MealEntry, food: FoodItem, grams: Double) {
+        val factor = grams / 100.0
+        mealEntryDao.update(
+            entry.copy(
+                grams = grams,
+                calories = food.caloriesPer100g * factor,
+                protein = food.proteinPer100g * factor,
+                fat = food.fatPer100g * factor,
+                carbs = food.carbsPer100g * factor,
+                micronutrients = food.micronutrients.scaledBy(factor)
+            )
+        )
+    }
+
     // `map` here is List's inline map; suspend calls inside it are fine because the
     // enclosing Flow.map transform (the caller of this function) is itself suspend.
     private suspend fun List<MealEntry>.attachFood(): List<MealEntryWithFood> =
