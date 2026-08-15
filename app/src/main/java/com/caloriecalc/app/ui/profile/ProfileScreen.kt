@@ -17,7 +17,13 @@ import androidx.compose.foundation.lazy.items
 import android.text.format.DateFormat
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -60,6 +66,7 @@ import com.caloriecalc.app.domain.Goal
 import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.Sex
 import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.SectionHeader
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
@@ -155,7 +162,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Your daily targets", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.Insights, "Your daily targets")
                         Text(
                             "Updates instantly as you edit below — press Save to keep changes.",
                             style = MaterialTheme.typography.labelSmall,
@@ -199,7 +206,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Body stats", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.Person, "Body stats")
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = bodyWeightText,
@@ -264,7 +271,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Nutrition targets", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.SetMeal, "Nutrition targets")
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
@@ -389,7 +396,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Meals", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.RestaurantMenu, "Meals")
                         Spacer(modifier = Modifier.height(8.dp))
                         mealSlots.forEach { slot ->
                             Row(
@@ -440,7 +447,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("AI photo estimation", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.AutoAwesome, "AI photo estimation")
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "Free Gemini API key from Google AI Studio (aistudio.google.com), used only to " +
@@ -474,7 +481,7 @@ fun ProfileScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Weight reminder", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.Notifications, "Weight reminder")
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),

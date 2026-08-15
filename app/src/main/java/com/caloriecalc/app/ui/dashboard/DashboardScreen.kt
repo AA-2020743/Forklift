@@ -18,9 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.RiceBowl
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.WaterDrop
@@ -50,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -63,6 +68,7 @@ import com.caloriecalc.app.domain.ActivityType
 import com.caloriecalc.app.ui.components.CalorieRing
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.MacroRangeBar
+import com.caloriecalc.app.ui.components.SectionHeader
 import com.caloriecalc.app.ui.components.activityTypeIcon
 import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
@@ -112,9 +118,19 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
                     Column(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        MaterialTheme.colorScheme.tertiary.copy(alpha = 0.04f)
+                                    )
+                                )
+                            )
+                            .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CalorieRing(consumed = state.calorieConsumed, target = state.calorieTarget)
@@ -130,7 +146,7 @@ fun DashboardScreen(
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Macros", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.BarChart, "Macros")
                         Spacer(modifier = Modifier.height(12.dp))
                         MacroRangeBar(label = "Protein", progress = state.proteinProgress, icon = Icons.Filled.SetMeal)
                         Spacer(modifier = Modifier.height(12.dp))
@@ -150,14 +166,14 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Micronutrients", fontWeight = FontWeight.Medium)
+                        SectionHeader(Icons.Filled.Medication, "Micronutrients")
                         Text("View details", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
 
             item {
-                Text("Meals", style = MaterialTheme.typography.titleMedium)
+                SectionHeader(Icons.Filled.RestaurantMenu, "Meals")
             }
 
             items(state.mealSummaries, key = { it.mealSlot.id }) { meal ->
@@ -206,7 +222,7 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Activity", style = MaterialTheme.typography.titleMedium)
+                    SectionHeader(Icons.Filled.DirectionsRun, "Activity")
                     if (state.totalCaloriesBurned > 0) {
                         Text(
                             "${state.totalCaloriesBurned} kcal burned",
