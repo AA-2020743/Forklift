@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
@@ -34,9 +37,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.ui.components.mealSlotAccentColor
+import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -53,6 +60,7 @@ fun QuantityScreen(
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
+    val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
 
     var food by remember { mutableStateOf<FoodItem?>(null) }
     LaunchedEffect(foodId) {
@@ -61,8 +69,22 @@ fun QuantityScreen(
 
     var mealName by remember { mutableStateOf("meal") }
     LaunchedEffect(mealSlotId) {
-        mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
+        if (!isQuickAdd) {
+            mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
+        }
     }
+
+    // Quick-add entries arrive with no meal chosen yet — offer a picker, defaulting to the
+    // first active meal so "Log" works immediately without forcing a choice.
+    val activeMealSlots by container.mealSlotRepository.observeActive().collectAsStateWithLifecycle(initialValue = emptyList())
+    var selectedMealSlotId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(activeMealSlots) {
+        if (isQuickAdd && selectedMealSlotId == null && activeMealSlots.isNotEmpty()) {
+            selectedMealSlotId = activeMealSlots.first().id
+        }
+    }
+    val targetMealSlotId = if (isQuickAdd) selectedMealSlotId else mealSlotId
+    val targetMealName = if (isQuickAdd) activeMealSlots.find { it.id == selectedMealSlotId }?.name ?: "meal" else mealName
 
     val currentFood = food
     if (currentFood == null) {
@@ -113,6 +135,29 @@ fun QuantityScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
+            if (isQuickAdd) {
+                Text("Log to", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(activeMealSlots, key = { it.id }) { slot ->
+                        FilterChip(
+                            selected = selectedMealSlotId == slot.id,
+                            onClick = { selectedMealSlotId = slot.id },
+                            label = { Text(slot.name) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = mealSlotIcon(slot.name),
+                                    contentDescription = null,
+                                    tint = mealSlotAccentColor(slot.name),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             if (currentFood.servingSizeGrams != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
@@ -144,9 +189,9 @@ fun QuantityScreen(
                     Text("Preview", style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
                     NutrientRow("Calories", calories, "kcal")
-                    NutrientRow("Protein", protein, "g")
                     NutrientRow("Fat", fat, "g")
                     NutrientRow("Carbs", carbs, "g")
+                    NutrientRow("Protein", protein, "g")
                 }
             }
 
@@ -154,16 +199,17 @@ fun QuantityScreen(
 
             Button(
                 onClick = {
+                    val target = targetMealSlotId ?: return@Button
                     scope.launch {
                         val today = LocalDate.now().toEpochDay()
-                        container.nutritionLogRepository.logFood(currentFood, mealSlotId, today, grams.coerceAtLeast(0.0))
+                        container.nutritionLogRepository.logFood(currentFood, target, today, grams.coerceAtLeast(0.0))
                         onLogged()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = grams > 0.0
+                enabled = grams > 0.0 && targetMealSlotId != null
             ) {
-                Text("Log to $mealName")
+                Text("Log to $targetMealName")
             }
         }
     }

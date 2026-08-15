@@ -1,5 +1,6 @@
 package com.caloriecalc.app.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,11 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RiceBowl
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.WaterDrop
@@ -25,7 +28,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +49,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -57,6 +64,7 @@ import com.caloriecalc.app.ui.components.CalorieRing
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.MacroRangeBar
 import com.caloriecalc.app.ui.components.activityTypeIcon
+import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 
@@ -64,7 +72,8 @@ import com.caloriecalc.app.ui.components.mealSlotIcon
 @Composable
 fun DashboardScreen(
     onMealClick: (mealSlotId: Long) -> Unit,
-    onMicronutrientsClick: () -> Unit
+    onMicronutrientsClick: () -> Unit,
+    onQuickAdd: () -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: DashboardViewModel = viewModel(
@@ -82,7 +91,18 @@ fun DashboardScreen(
     var showLogActivityDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Today") }) }
+        topBar = { TopAppBar(title = { Text("Today") }) },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onQuickAdd,
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 1.dp, pressedElevation = 3.dp)
+            ) {
+                Icon(Icons.Filled.QrCodeScanner, contentDescription = "Quickly scan or add a food")
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -160,7 +180,13 @@ fun DashboardScreen(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
-                                Text(meal.mealSlot.name, fontWeight = FontWeight.Medium)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(meal.mealSlot.name, fontWeight = FontWeight.Medium)
+                                    if (meal.itemCount > 0 && isMainMeal(meal.mealSlot.name)) {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        ProteinPill(meal.proteinGrams)
+                                    }
+                                }
                                 Text(
                                     text = if (meal.itemCount == 0) "No items logged" else "${meal.itemCount} item(s)",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -232,6 +258,32 @@ fun DashboardScreen(
                 viewModel.logActivity(type, duration, steps, override)
                 showLogActivityDialog = false
             }
+        )
+    }
+}
+
+/** Small rounded call-out for a main meal's protein — reuses the same protein icon as the
+ * Macros card so it reads as "the same nutrient" at a glance. */
+@Composable
+private fun ProteinPill(grams: Int) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f))
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.SetMeal,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.size(12.dp)
+        )
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = "${grams}g protein",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.tertiary
         )
     }
 }

@@ -56,6 +56,7 @@ import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.foodItemIcon
 import com.caloriecalc.app.ui.components.stableAccentColor
+import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -82,9 +83,12 @@ fun AddFoodScreen(
     val onlineResults by viewModel.onlineResults.collectAsStateWithLifecycle()
     val isSearchingOnline by viewModel.isSearchingOnline.collectAsStateWithLifecycle()
 
+    val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
     var mealName by remember { mutableStateOf("meal") }
     LaunchedEffect(mealSlotId) {
-        mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
+        if (!isQuickAdd) {
+            mealName = container.mealSlotRepository.getById(mealSlotId)?.name ?: "meal"
+        }
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -102,18 +106,20 @@ fun AddFoodScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("Add to $mealName") },
+                    title = { Text(if (isQuickAdd) "Scan or add food" else "Add to $mealName") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
-                        IconButton(onClick = { onPhotoEstimate(mealSlotId) }) {
-                            Icon(Icons.Filled.CameraAlt, contentDescription = "Estimate from photo")
-                        }
-                        IconButton(onClick = { showQuickAddDialog = true }) {
-                            Icon(Icons.Filled.Bolt, contentDescription = "Quick add calories")
+                        if (!isQuickAdd) {
+                            IconButton(onClick = { onPhotoEstimate(mealSlotId) }) {
+                                Icon(Icons.Filled.CameraAlt, contentDescription = "Estimate from photo")
+                            }
+                            IconButton(onClick = { showQuickAddDialog = true }) {
+                                Icon(Icons.Filled.Bolt, contentDescription = "Quick add calories")
+                            }
                         }
                         IconButton(onClick = { onScanBarcode(mealSlotId) }) {
                             Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
@@ -198,13 +204,6 @@ fun AddFoodScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
-                            value = protein,
-                            onValueChange = { protein = it },
-                            label = { Text("Protein g") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
                             value = fat,
                             onValueChange = { fat = it },
                             label = { Text("Fat g") },
@@ -215,6 +214,13 @@ fun AddFoodScreen(
                             value = carbs,
                             onValueChange = { carbs = it },
                             label = { Text("Carbs g") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = protein,
+                            onValueChange = { protein = it },
+                            label = { Text("Protein g") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             modifier = Modifier.weight(1f)
                         )

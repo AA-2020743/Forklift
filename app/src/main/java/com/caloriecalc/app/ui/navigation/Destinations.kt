@@ -7,6 +7,10 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.ui.graphics.vector.ImageVector
 
+/** Sentinel passed as a mealSlotId when a food is being scanned/added from the Dashboard's
+ * quick-add FAB, before any meal has been chosen — no real MealSlot ever has id 0. */
+const val QUICK_ADD_MEAL_SLOT_ID = 0L
+
 sealed class Screen(val route: String) {
     data object Dashboard : Screen("dashboard")
     data object Workouts : Screen("workouts")

@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class MealSummary(val mealSlot: MealSlot, val calories: Int, val itemCount: Int)
+data class MealSummary(val mealSlot: MealSlot, val calories: Int, val proteinGrams: Int, val itemCount: Int)
 
 /** A unified row for the day's "Activity" feed: either a lifting session or a quick-logged
  * cardio/misc activity, so both can render in one list. */
@@ -77,6 +77,7 @@ class DashboardViewModel(
             MealSummary(
                 mealSlot = slot,
                 calories = mealEntries.sumOf { it.entry.calories }.roundToInt(),
+                proteinGrams = mealEntries.sumOf { it.entry.protein }.roundToInt(),
                 itemCount = mealEntries.size
             )
         }

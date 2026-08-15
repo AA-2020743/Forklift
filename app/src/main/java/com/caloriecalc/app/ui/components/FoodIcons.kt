@@ -61,6 +61,13 @@ fun mealSlotIcon(name: String): ImageVector {
     }
 }
 
+/** Whether a meal slot is one of the three main meals (Breakfast/Lunch/Dinner), by keyword —
+ * used to limit meal-level protein call-outs to the meals that carry most of the day's intake. */
+fun isMainMeal(name: String): Boolean {
+    val n = name.lowercase()
+    return "breakfast" in n || "brunch" in n || "lunch" in n || "dinner" in n || "supper" in n
+}
+
 /** A stable color from a small rotating palette, keyed off a name so the same string always
  * lands on the same color — used as a fallback wherever there's no more specific rule. */
 fun stableAccentColor(name: String): Color =

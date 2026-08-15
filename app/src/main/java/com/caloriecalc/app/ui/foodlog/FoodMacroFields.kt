@@ -110,14 +110,6 @@ fun FoodMacroFields(
     )
     Spacer(modifier = Modifier.height(8.dp))
     OutlinedTextField(
-        value = protein,
-        onValueChange = onProteinChange,
-        label = { Text("Protein g / $unitSuffix") },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth()
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    OutlinedTextField(
         value = fat,
         onValueChange = onFatChange,
         label = { Text("Fat g / $unitSuffix") },
@@ -129,6 +121,14 @@ fun FoodMacroFields(
         value = carbs,
         onValueChange = onCarbsChange,
         label = { Text("Carbs g / $unitSuffix") },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth()
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(
+        value = protein,
+        onValueChange = onProteinChange,
+        label = { Text("Protein g / $unitSuffix") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth()
     )

@@ -78,7 +78,8 @@ fun AppNavHost() {
                     onMealClick = { mealSlotId ->
                         navController.navigate(Screen.MealLog.createRoute(mealSlotId))
                     },
-                    onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) }
+                    onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) },
+                    onQuickAdd = { navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID)) }
                 )
             }
             composable(Screen.Micronutrients.route) {
@@ -222,7 +223,13 @@ fun AppNavHost() {
                     foodId = foodId,
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onLogged = { navController.popBackStack(Screen.MealLog.createRoute(mealSlotId), false) }
+                    onLogged = {
+                        if (mealSlotId == QUICK_ADD_MEAL_SLOT_ID) {
+                            navController.popBackStack(Screen.Dashboard.route, false)
+                        } else {
+                            navController.popBackStack(Screen.MealLog.createRoute(mealSlotId), false)
+                        }
+                    }
                 )
             }
 
