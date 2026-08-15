@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -31,6 +33,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.foodItemIcon
+import com.caloriecalc.app.ui.components.mealSlotAccentColor
+import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.components.stableAccentColor
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,7 +60,17 @@ fun MealLogScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(mealName) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FoodIconBadge(
+                            icon = mealSlotIcon(mealName),
+                            accentColor = mealSlotAccentColor(mealName),
+                            size = 30.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(mealName)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -101,13 +118,21 @@ fun MealLogScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
-                                Text(item.food.name, style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    text = "${item.entry.grams.roundToInt()} g · ${item.entry.calories.roundToInt()} kcal",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                FoodIconBadge(
+                                    icon = foodItemIcon(item.food.name),
+                                    accentColor = stableAccentColor(item.food.name),
+                                    size = 36.dp
                                 )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(item.food.name, style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        text = "${item.entry.grams.roundToInt()} g · ${item.entry.calories.roundToInt()} kcal",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                             IconButton(onClick = { viewModel.deleteEntry(item) }) {
                                 Icon(Icons.Filled.Delete, contentDescription = "Remove")

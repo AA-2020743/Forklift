@@ -59,6 +59,9 @@ import com.caloriecalc.app.domain.ActivityLevel
 import com.caloriecalc.app.domain.Goal
 import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.Sex
+import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.mealSlotAccentColor
+import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
 import com.caloriecalc.app.ui.theme.StatusOnTarget
 import java.util.Calendar
@@ -390,11 +393,19 @@ fun ProfileScreen() {
                         Spacer(modifier = Modifier.height(8.dp))
                         mealSlots.forEach { slot ->
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(slot.name)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    FoodIconBadge(
+                                        icon = mealSlotIcon(slot.name),
+                                        accentColor = mealSlotAccentColor(slot.name),
+                                        size = 32.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(slot.name)
+                                }
                                 IconButton(onClick = {
                                     scope.launch { container.mealSlotRepository.removeMeal(slot.id) }
                                 }) {

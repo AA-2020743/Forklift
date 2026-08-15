@@ -52,6 +52,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.foodItemIcon
+import com.caloriecalc.app.ui.components.stableAccentColor
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 
@@ -311,14 +314,21 @@ private fun FoodListContent(foods: List<FoodItem>, onSelect: (FoodItem) -> Unit,
 @Composable
 private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), onClick = { onSelect(food) }) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(food.name, style = MaterialTheme.typography.bodyLarge)
-            val brandPrefix = food.brand?.let { "$it · " } ?: ""
-            Text(
-                text = "$brandPrefix${food.caloriesPer100g.toInt()} kcal / 100g",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FoodIconBadge(icon = foodItemIcon(food.name), accentColor = stableAccentColor(food.name))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(food.name, style = MaterialTheme.typography.bodyLarge)
+                val brandPrefix = food.brand?.let { "$it · " } ?: ""
+                Text(
+                    text = "$brandPrefix${food.caloriesPer100g.toInt()} kcal / 100g",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
