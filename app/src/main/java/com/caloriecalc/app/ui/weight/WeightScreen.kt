@@ -14,6 +14,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -44,7 +52,9 @@ import com.caloriecalc.app.data.local.entity.WeightLog
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.ChartSeries
+import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.LineChart
+import com.caloriecalc.app.ui.components.SectionHeader
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
@@ -96,9 +106,9 @@ fun WeightScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = state.latestWeightKg?.let { "Latest: ${it} kg" } ?: "No weight logged yet",
-                            style = MaterialTheme.typography.titleMedium
+                        SectionHeader(
+                            icon = Icons.Filled.MonitorWeight,
+                            title = state.latestWeightKg?.let { "Latest: ${it} kg" } ?: "No weight logged yet"
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -128,7 +138,7 @@ fun WeightScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Weight trend (28 days)", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.ShowChart, "Weight trend (28 days)")
                         Spacer(modifier = Modifier.height(8.dp))
                         LineChart(series = weightSeries, modifier = Modifier.fillMaxWidth())
                     }
@@ -138,7 +148,7 @@ fun WeightScreen() {
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Calorie intake (28 days)", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.LocalFireDepartment, "Calorie intake (28 days)")
                         Spacer(modifier = Modifier.height(8.dp))
                         LineChart(series = calorieSeries, modifier = Modifier.fillMaxWidth())
                     }
@@ -149,10 +159,19 @@ fun WeightScreen() {
                 val trend = state.trend
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Correlation & suggestions", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.Insights, "Correlation & suggestions")
                         Spacer(modifier = Modifier.height(8.dp))
                         if (trend?.weeklyChangeKg != null) {
-                            Text("Trend: ${formatSigned(trend.weeklyChangeKg)} kg/week")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (trend.weeklyChangeKg >= 0) Icons.Filled.TrendingUp else Icons.Filled.TrendingDown,
+                                    contentDescription = null,
+                                    tint = if (trend.weeklyChangeKg >= 0) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Trend: ${formatSigned(trend.weeklyChangeKg)} kg/week")
+                            }
                             trend.estimatedMaintenanceCalories?.let {
                                 Text("Estimated true maintenance: ~$it kcal/day")
                             }
@@ -174,7 +193,7 @@ fun WeightScreen() {
                 val latestMeasurement = measurements.firstOrNull()
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Body measurements", style = MaterialTheme.typography.titleMedium)
+                        SectionHeader(Icons.Filled.Straighten, "Body measurements")
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             latestMeasurement?.let {
@@ -191,7 +210,7 @@ fun WeightScreen() {
                 }
             }
 
-            item { Text("History", style = MaterialTheme.typography.titleMedium) }
+            item { SectionHeader(Icons.Filled.History, "History") }
 
             if (state.weightLogs.isEmpty()) {
                 item { Text("No entries yet.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -206,7 +225,15 @@ fun WeightScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(LocalDate.ofEpochDay(log.epochDay).format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FoodIconBadge(
+                                icon = Icons.Filled.MonitorWeight,
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                size = 32.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(LocalDate.ofEpochDay(log.epochDay).format(DateTimeFormatter.ofPattern("MMM d, yyyy")))
+                        }
                         Text("${log.weightKg} kg")
                     }
                 }

@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +42,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.SectionHeader
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -83,14 +91,22 @@ fun WorkoutListScreen(
             val report = coverage
             if (report != null && report.suggestions.isNotEmpty()) {
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                    ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("A few gaps, last 14 days", style = MaterialTheme.typography.titleMedium)
+                            SectionHeader(
+                                icon = Icons.Filled.Info,
+                                title = "A few gaps, last 14 days",
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
                             Spacer(modifier = Modifier.height(8.dp))
                             report.suggestions.forEach { suggestion ->
                                 Text(
                                     text = "${suggestion.subGroup.displayName} — ${suggestion.exercises.joinToString { it.name }}",
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             }
                         }
@@ -98,7 +114,7 @@ fun WorkoutListScreen(
                 }
             }
 
-            item { Text("History", style = MaterialTheme.typography.titleMedium) }
+            item { SectionHeader(Icons.Filled.History, "History") }
 
             if (sessions.isEmpty()) {
                 item { Text("No workouts logged yet. Tap + to start one.") }
@@ -110,12 +126,21 @@ fun WorkoutListScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = LocalDate.ofEpochDay(session.epochDay).format(dateFormatter),
-                            fontWeight = FontWeight.Medium
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            FoodIconBadge(
+                                icon = Icons.Filled.FitnessCenter,
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                size = 32.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = LocalDate.ofEpochDay(session.epochDay).format(dateFormatter),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                         Text(session.name ?: "Workout", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
