@@ -38,6 +38,10 @@ sealed class Screen(val route: String) {
         fun createRoute(foodId: Long, mealSlotId: Long) = "quantity/$foodId/$mealSlotId"
     }
 
+    data object EditFood : Screen("edit_food/{foodId}") {
+        fun createRoute(foodId: Long) = "edit_food/$foodId"
+    }
+
     data object WorkoutSessionDetail : Screen("workout_session/{sessionId}") {
         fun createRoute(sessionId: Long) = "workout_session/$sessionId"
     }

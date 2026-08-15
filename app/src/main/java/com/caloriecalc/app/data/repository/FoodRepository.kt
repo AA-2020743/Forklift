@@ -101,6 +101,8 @@ class FoodRepository(
         val id = foodDao.insert(food)
         return food.copy(id = id)
     }
+
+    suspend fun updateFood(food: FoodItem) = foodDao.update(food)
 }
 
 private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {

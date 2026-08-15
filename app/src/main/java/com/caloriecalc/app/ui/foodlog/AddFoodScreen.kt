@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -67,7 +68,8 @@ fun AddFoodScreen(
     onManualEntry: (Long) -> Unit,
     onPhotoEstimate: (Long) -> Unit,
     onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit,
-    onQuickAdded: (Long) -> Unit
+    onQuickAdded: (Long) -> Unit,
+    onEditFood: (foodId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: AddFoodViewModel = viewModel(
@@ -151,10 +153,11 @@ fun AddFoodScreen(
                     onlineResults = onlineResults,
                     isSearchingOnline = isSearchingOnline,
                     onSearchOnline = viewModel::searchOnline,
-                    onSelect = onSelect
+                    onSelect = onSelect,
+                    onEditFood = onEditFood
                 )
-                1 -> FoodListContent(recent, onSelect, "No recently used foods yet.")
-                else -> FoodListContent(frequent, onSelect, "No frequently used foods yet.")
+                1 -> FoodListContent(recent, onSelect, onEditFood, "No recently used foods yet.")
+                else -> FoodListContent(frequent, onSelect, onEditFood, "No frequently used foods yet.")
             }
         }
     }
@@ -265,7 +268,8 @@ private fun SearchTabContent(
     onlineResults: List<FoodItem>,
     isSearchingOnline: Boolean,
     onSearchOnline: () -> Unit,
-    onSelect: (FoodItem) -> Unit
+    onSelect: (FoodItem) -> Unit,
+    onEditFood: (Long) -> Unit
 ) {
     if (query.isBlank()) {
         EmptyState("Search for a food by name, or scan a barcode.")
@@ -274,7 +278,7 @@ private fun SearchTabContent(
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (localResults.isNotEmpty()) {
             item { Text("From your food list", style = MaterialTheme.typography.titleMedium) }
-            items(localResults, key = { "local_${it.id}" }) { FoodRow(it, onSelect) }
+            items(localResults, key = { "local_${it.id}" }) { FoodRow(it, onSelect, onEditFood) }
         }
         item {
             Row(
@@ -295,32 +299,39 @@ private fun SearchTabContent(
                 }
             }
         } else if (onlineResults.isNotEmpty()) {
-            items(onlineResults, key = { "online_${it.barcode ?: it.name}" }) { FoodRow(it, onSelect) }
+            items(onlineResults, key = { "online_${it.barcode ?: it.name}" }) { FoodRow(it, onSelect, onEditFood) }
         }
     }
 }
 
 @Composable
-private fun FoodListContent(foods: List<FoodItem>, onSelect: (FoodItem) -> Unit, emptyMessage: String) {
+private fun FoodListContent(
+    foods: List<FoodItem>,
+    onSelect: (FoodItem) -> Unit,
+    onEditFood: (Long) -> Unit,
+    emptyMessage: String
+) {
     if (foods.isEmpty()) {
         EmptyState(emptyMessage)
         return
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(foods, key = { it.id }) { FoodRow(it, onSelect) }
+        items(foods, key = { it.id }) { FoodRow(it, onSelect, onEditFood) }
     }
 }
 
 @Composable
-private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit) {
+private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit, onEditFood: (Long) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), onClick = { onSelect(food) }) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             FoodIconBadge(icon = foodItemIcon(food.name), accentColor = stableAccentColor(food.name))
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(food.name, style = MaterialTheme.typography.bodyLarge)
                 val brandPrefix = food.brand?.let { "$it · " } ?: ""
                 Text(
@@ -328,6 +339,11 @@ private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            if (food.id != 0L) {
+                IconButton(onClick = { onEditFood(food.id) }) {
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit ${food.name}")
+                }
             }
         }
     }

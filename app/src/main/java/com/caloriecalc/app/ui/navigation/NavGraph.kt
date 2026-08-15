@@ -22,6 +22,7 @@ import com.caloriecalc.app.ui.dashboard.DashboardScreen
 import com.caloriecalc.app.ui.dashboard.MicronutrientsScreen
 import com.caloriecalc.app.ui.foodlog.AddFoodScreen
 import com.caloriecalc.app.ui.foodlog.BarcodeScanScreen
+import com.caloriecalc.app.ui.foodlog.EditFoodScreen
 import com.caloriecalc.app.ui.foodlog.ManualFoodEntryScreen
 import com.caloriecalc.app.ui.foodlog.MealLogScreen
 import com.caloriecalc.app.ui.foodlog.PhotoEstimateScreen
@@ -153,7 +154,20 @@ fun AppNavHost() {
                     onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
                     onPhotoEstimate = { navController.navigate(Screen.PhotoEstimate.createRoute(it)) },
                     onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) },
-                    onQuickAdded = { mid -> navController.popBackStack(Screen.MealLog.createRoute(mid), false) }
+                    onQuickAdded = { mid -> navController.popBackStack(Screen.MealLog.createRoute(mid), false) },
+                    onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) }
+                )
+            }
+
+            composable(
+                route = Screen.EditFood.route,
+                arguments = listOf(navArgument("foodId") { type = NavType.LongType })
+            ) { entry ->
+                val foodId = entry.arguments?.getLong("foodId") ?: 0L
+                EditFoodScreen(
+                    foodId = foodId,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
                 )
             }
 

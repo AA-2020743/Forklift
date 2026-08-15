@@ -1,5 +1,6 @@
 package com.caloriecalc.app.ui.foodlog
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,43 +12,77 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.rememberAppContainer
 import kotlinx.coroutines.launch
 
+/**
+ * Edits a food already in the user's list. Storage is always per-100g ([FoodItem]), so this
+ * always opens in Per 100g mode showing exactly what's stored; switching to Per serving (and
+ * back) live-converts the numbers via [convertMacroBasis], same as the create form.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ManualFoodEntryScreen(
-    mealSlotId: Long,
+fun EditFoodScreen(
+    foodId: Long,
     onBack: () -> Unit,
-    onSaved: (foodId: Long, mealSlotId: Long) -> Unit
+    onSaved: () -> Unit
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
 
-    var name by remember { mutableStateOf("") }
-    var brand by remember { mutableStateOf("") }
-    var basis by remember { mutableStateOf(MacroBasis.PER_100G) }
-    var calories by remember { mutableStateOf("") }
-    var protein by remember { mutableStateOf("") }
-    var fat by remember { mutableStateOf("") }
-    var carbs by remember { mutableStateOf("") }
-    var servingGrams by remember { mutableStateOf("") }
-    var servingName by remember { mutableStateOf("") }
+    var loaded by remember { mutableStateOf<FoodItem?>(null) }
+    LaunchedEffect(foodId) {
+        loaded = container.foodRepository.getById(foodId)
+    }
+
+    val food = loaded
+    if (food == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Edit food") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        return
+    }
+
+    var name by remember(food) { mutableStateOf(food.name) }
+    var brand by remember(food) { mutableStateOf(food.brand ?: "") }
+    var basis by remember(food) { mutableStateOf(MacroBasis.PER_100G) }
+    var calories by remember(food) { mutableStateOf(formatMacroValue(food.caloriesPer100g)) }
+    var protein by remember(food) { mutableStateOf(formatMacroValue(food.proteinPer100g)) }
+    var fat by remember(food) { mutableStateOf(formatMacroValue(food.fatPer100g)) }
+    var carbs by remember(food) { mutableStateOf(formatMacroValue(food.carbsPer100g)) }
+    var servingGrams by remember(food) { mutableStateOf(food.servingSizeGrams?.let { formatMacroValue(it) } ?: "") }
+    var servingName by remember(food) { mutableStateOf(food.servingName ?: "") }
 
     val onBasisChange: (MacroBasis) -> Unit = { newBasis ->
         val grams = servingGrams.toDoubleOrNull()
@@ -65,7 +100,7 @@ fun ManualFoodEntryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add food manually") },
+                title = { Text("Edit food") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
                 }
@@ -79,6 +114,14 @@ fun ManualFoodEntryScreen(
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            Text(
+                "Changes only apply going forward — meals you've already logged with this food " +
+                    "keep the values they were logged with.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(value = brand, onValueChange = { brand = it }, label = { Text("Brand (optional)") }, modifier = Modifier.fillMaxWidth())
@@ -106,23 +149,25 @@ fun ManualFoodEntryScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        val food = container.foodRepository.createManualFood(
-                            name = name.trim(),
-                            brand = brand.trim().takeIf { it.isNotBlank() },
-                            caloriesPer100g = convertMacroBasis(calories.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
-                            proteinPer100g = convertMacroBasis(protein.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
-                            fatPer100g = convertMacroBasis(fat.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
-                            carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
-                            servingSizeGrams = servingGramsValue,
-                            servingName = servingName.trim().takeIf { it.isNotBlank() }
+                        container.foodRepository.updateFood(
+                            food.copy(
+                                name = name.trim(),
+                                brand = brand.trim().takeIf { it.isNotBlank() },
+                                caloriesPer100g = convertMacroBasis(calories.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
+                                proteinPer100g = convertMacroBasis(protein.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
+                                fatPer100g = convertMacroBasis(fat.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
+                                carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
+                                servingSizeGrams = servingGramsValue,
+                                servingName = servingName.trim().takeIf { it.isNotBlank() }
+                            )
                         )
-                        onSaved(food.id, mealSlotId)
+                        onSaved()
                     }
                 },
                 enabled = isValid,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Save & continue")
+                Text("Save changes")
             }
         }
     }
