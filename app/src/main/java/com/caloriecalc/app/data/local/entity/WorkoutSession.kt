@@ -25,5 +25,7 @@ data class WorkoutSession(
     val name: String? = null,
     val notes: String? = null,
     /** The template this session was started from, if any — drives the "planned" list in-session. */
-    val templateId: Long? = null
+    val templateId: Long? = null,
+    /** Set when the user finishes the session; used to estimate its calorie burn. Null while in progress. */
+    val endedAtEpochMillis: Long? = null
 )

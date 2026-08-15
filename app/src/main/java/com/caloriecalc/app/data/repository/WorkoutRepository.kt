@@ -39,6 +39,9 @@ class WorkoutRepository(
 
     suspend fun deleteSession(session: WorkoutSession) = sessionDao.delete(session)
 
+    suspend fun finishSession(id: Long, endedAtEpochMillis: Long = System.currentTimeMillis()) =
+        sessionDao.finish(id, endedAtEpochMillis)
+
     fun observeSetsForSession(sessionId: Long): Flow<List<SetEntry>> = setEntryDao.observeForSession(sessionId)
 
     suspend fun addSet(set: SetEntry): Long = setEntryDao.insert(set)

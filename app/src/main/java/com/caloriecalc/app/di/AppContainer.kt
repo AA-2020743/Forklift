@@ -7,6 +7,7 @@ import com.caloriecalc.app.data.local.ApiKeyStore
 import com.caloriecalc.app.data.local.AppDatabase
 import com.caloriecalc.app.data.remote.GeminiClient
 import com.caloriecalc.app.data.remote.NetworkClient
+import com.caloriecalc.app.data.repository.ActivityRepository
 import com.caloriecalc.app.data.repository.BodyMeasurementRepository
 import com.caloriecalc.app.data.repository.FoodRepository
 import com.caloriecalc.app.data.repository.MealSlotRepository
@@ -72,6 +73,10 @@ class AppContainer(context: Context) {
 
     val workoutTemplateRepository: WorkoutTemplateRepository by lazy {
         WorkoutTemplateRepository(database.workoutTemplateDao(), workoutRepository)
+    }
+
+    val activityRepository: ActivityRepository by lazy {
+        ActivityRepository(database.activityLogDao())
     }
 
     val photoEstimationRepository: PhotoEstimationRepository by lazy {

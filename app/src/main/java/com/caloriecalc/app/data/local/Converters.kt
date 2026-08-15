@@ -3,6 +3,7 @@ package com.caloriecalc.app.data.local
 import androidx.room.TypeConverter
 import com.caloriecalc.app.data.local.entity.FoodSource
 import com.caloriecalc.app.domain.ActivityLevel
+import com.caloriecalc.app.domain.ActivityType
 import com.caloriecalc.app.domain.Goal
 import com.caloriecalc.app.domain.MuscleGroup
 import com.caloriecalc.app.domain.MuscleSubGroup
@@ -33,6 +34,12 @@ class Converters {
 
     @TypeConverter
     fun toGoal(value: String): Goal = Goal.valueOf(value)
+
+    @TypeConverter
+    fun fromActivityType(value: ActivityType): String = value.name
+
+    @TypeConverter
+    fun toActivityType(value: String): ActivityType = ActivityType.valueOf(value)
 
     @TypeConverter
     fun fromMuscleGroup(value: MuscleGroup): String = value.name

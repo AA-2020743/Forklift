@@ -24,4 +24,7 @@ interface WorkoutSessionDao {
 
     @Query("SELECT * FROM workout_sessions WHERE epochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY epochDay ASC")
     fun observeInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<WorkoutSession>>
+
+    @Query("UPDATE workout_sessions SET endedAtEpochMillis = :endedAtEpochMillis WHERE id = :id")
+    suspend fun finish(id: Long, endedAtEpochMillis: Long)
 }

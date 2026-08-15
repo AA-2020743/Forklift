@@ -63,4 +63,11 @@ class WorkoutSessionViewModel(
     fun deleteSet(set: SetEntry) {
         viewModelScope.launch { workoutRepository.deleteSet(set) }
     }
+
+    fun finishSession() {
+        viewModelScope.launch {
+            workoutRepository.finishSession(sessionId)
+            _session.value = workoutRepository.getSession(sessionId)
+        }
+    }
 }

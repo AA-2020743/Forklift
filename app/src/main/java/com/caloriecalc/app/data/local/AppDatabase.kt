@@ -3,6 +3,7 @@ package com.caloriecalc.app.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.caloriecalc.app.data.local.dao.ActivityLogDao
 import com.caloriecalc.app.data.local.dao.BodyMeasurementDao
 import com.caloriecalc.app.data.local.dao.ExerciseDao
 import com.caloriecalc.app.data.local.dao.FoodDao
@@ -13,6 +14,7 @@ import com.caloriecalc.app.data.local.dao.UserProfileDao
 import com.caloriecalc.app.data.local.dao.WeightLogDao
 import com.caloriecalc.app.data.local.dao.WorkoutSessionDao
 import com.caloriecalc.app.data.local.dao.WorkoutTemplateDao
+import com.caloriecalc.app.data.local.entity.ActivityLog
 import com.caloriecalc.app.data.local.entity.BodyMeasurement
 import com.caloriecalc.app.data.local.entity.Exercise
 import com.caloriecalc.app.data.local.entity.FoodItem
@@ -37,9 +39,10 @@ import com.caloriecalc.app.data.local.entity.WorkoutTemplateExercise
         WorkoutSession::class,
         SetEntry::class,
         WorkoutTemplate::class,
-        WorkoutTemplateExercise::class
+        WorkoutTemplateExercise::class,
+        ActivityLog::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -54,6 +57,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutSessionDao(): WorkoutSessionDao
     abstract fun setEntryDao(): SetEntryDao
     abstract fun workoutTemplateDao(): WorkoutTemplateDao
+    abstract fun activityLogDao(): ActivityLogDao
 
     companion object {
         const val DATABASE_NAME = "caloriecalc.db"

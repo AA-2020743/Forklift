@@ -178,4 +178,21 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/**
+ * v4 -> v5: adds day-activity tracking. `endedAtEpochMillis` on workout_sessions is a plain
+ * nullable addition (safe ADD COLUMN); `activity_logs` is a brand new table.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE workout_sessions ADD COLUMN `endedAtEpochMillis` INTEGER")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `activity_logs` (" +
+                "`id` INTEGER NOT NULL, `epochDay` INTEGER NOT NULL, `type` TEXT NOT NULL, " +
+                "`durationMinutes` INTEGER NOT NULL, `steps` INTEGER, `caloriesBurned` INTEGER NOT NULL, " +
+                "`loggedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_logs_epochDay` ON `activity_logs` (`epochDay`)")
+    }
+}
+
+val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)

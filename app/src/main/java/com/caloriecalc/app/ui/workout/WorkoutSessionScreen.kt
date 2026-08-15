@@ -23,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +67,12 @@ fun WorkoutSessionScreen(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                },
+                actions = {
+                    val finished = session?.endedAtEpochMillis != null
+                    TextButton(onClick = { viewModel.finishSession() }, enabled = !finished) {
+                        Text(if (finished) "Finished" else "Finish")
+                    }
                 }
             )
         },
