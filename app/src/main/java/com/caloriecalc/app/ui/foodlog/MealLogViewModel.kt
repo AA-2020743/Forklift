@@ -16,17 +16,18 @@ import kotlinx.coroutines.launch
 
 class MealLogViewModel(
     private val mealSlotId: Long,
+    val epochDay: Long,
     private val nutritionLogRepository: NutritionLogRepository,
     private val mealSlotRepository: MealSlotRepository
 ) : ViewModel() {
 
-    private val today = LocalDate.now().toEpochDay()
+    val isToday: Boolean = epochDay == LocalDate.now().toEpochDay()
 
     private val _mealSlot = MutableStateFlow<MealSlot?>(null)
     val mealSlot: StateFlow<MealSlot?> = _mealSlot.asStateFlow()
 
     val entries: StateFlow<List<MealEntryWithFood>> =
-        nutritionLogRepository.entriesForMeal(today, mealSlotId)
+        nutritionLogRepository.entriesForMeal(epochDay, mealSlotId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {

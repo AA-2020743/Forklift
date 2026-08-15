@@ -52,24 +52,29 @@ import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.components.stableAccentColor
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MealLogScreen(
     mealSlotId: Long,
+    epochDay: Long,
     onBack: () -> Unit,
     onAddFood: (Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: MealLogViewModel = viewModel(
+        key = "meal_log_${mealSlotId}_$epochDay",
         factory = SimpleViewModelFactory {
-            MealLogViewModel(mealSlotId, container.nutritionLogRepository, container.mealSlotRepository)
+            MealLogViewModel(mealSlotId, epochDay, container.nutritionLogRepository, container.mealSlotRepository)
         }
     )
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val mealSlot by viewModel.mealSlot.collectAsStateWithLifecycle()
     val mealName = mealSlot?.name ?: "Meal"
+    val isToday = viewModel.isToday
     var editingEntry by remember { mutableStateOf<MealEntryWithFood?>(null) }
 
     Scaffold(
@@ -83,7 +88,17 @@ fun MealLogScreen(
                             size = 30.dp
                         )
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(mealName)
+                        Column {
+                            Text(mealName)
+                            if (!isToday) {
+                                Text(
+                                    text = LocalDate.ofEpochDay(epochDay)
+                                        .format(DateTimeFormatter.ofPattern("EEE, MMM d")),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -94,8 +109,10 @@ fun MealLogScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onAddFood(mealSlotId) }) {
-                Icon(Icons.Filled.Add, contentDescription = "Add food")
+            if (isToday) {
+                FloatingActionButton(onClick = { onAddFood(mealSlotId) }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Add food")
+                }
             }
         }
     ) { padding ->
@@ -107,7 +124,10 @@ fun MealLogScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Nothing logged yet for ${mealName.lowercase()}.")
+                Text(
+                    if (isToday) "Nothing logged yet for ${mealName.lowercase()}."
+                    else "Nothing was logged for ${mealName.lowercase()} on this day."
+                )
             }
         } else {
             val totalCalories = entries.sumOf { it.entry.calories }.roundToInt()
@@ -149,12 +169,14 @@ fun MealLogScreen(
                                     )
                                 }
                             }
-                            Row {
-                                IconButton(onClick = { editingEntry = item }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "Edit ${item.food.name}")
-                                }
-                                IconButton(onClick = { viewModel.deleteEntry(item) }) {
-                                    Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                            if (isToday) {
+                                Row {
+                                    IconButton(onClick = { editingEntry = item }) {
+                                        Icon(Icons.Filled.Edit, contentDescription = "Edit ${item.food.name}")
+                                    }
+                                    IconButton(onClick = { viewModel.deleteEntry(item) }) {
+                                        Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                                    }
                                 }
                             }
                         }

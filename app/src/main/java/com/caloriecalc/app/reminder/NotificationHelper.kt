@@ -17,6 +17,7 @@ object NotificationHelper {
 
     const val WEIGHT_REMINDER_CHANNEL_ID = "weight_reminder"
     private const val WEIGHT_REMINDER_NOTIFICATION_ID = 1001
+    private const val WEIGHT_FOLLOW_UP_NOTIFICATION_ID = 1002
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -32,6 +33,34 @@ object NotificationHelper {
     }
 
     fun showWeightReminder(context: Context) {
+        notifyWeight(
+            context = context,
+            notificationId = WEIGHT_REMINDER_NOTIFICATION_ID,
+            title = "Log today's weight",
+            body = "Keep your weight trend accurate — it only takes a few seconds.",
+            priority = NotificationCompat.PRIORITY_DEFAULT
+        )
+    }
+
+    /** Second nudge, hours after the first went unanswered — deliberately higher priority so
+     * it isn't silently buried alongside the one that was already ignored. */
+    fun showWeightFollowUpReminder(context: Context) {
+        notifyWeight(
+            context = context,
+            notificationId = WEIGHT_FOLLOW_UP_NOTIFICATION_ID,
+            title = "Still no weight logged today",
+            body = "A gap in the trend makes the calorie adjustment less accurate. Log it now?",
+            priority = NotificationCompat.PRIORITY_HIGH
+        )
+    }
+
+    private fun notifyWeight(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        body: String,
+        priority: Int
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -43,20 +72,20 @@ object NotificationHelper {
         }
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, WEIGHT_REMINDER_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
-            .setContentTitle("Log today's weight")
-            .setContentText("Keep your weight trend accurate — it only takes a few seconds.")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(priority)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 
-        NotificationManagerCompat.from(context).notify(WEIGHT_REMINDER_NOTIFICATION_ID, notification)
+        NotificationManagerCompat.from(context).notify(notificationId, notification)
     }
 }

@@ -8,6 +8,9 @@ class WaterRepository(private val dao: WaterLogDao) {
 
     fun observeForDay(epochDay: Long): Flow<WaterLog?> = dao.observeForDay(epochDay)
 
+    fun observeInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<WaterLog>> =
+        dao.observeInRange(fromEpochDay, toEpochDay)
+
     /** Adds (or, with a negative delta, removes) water from the running total for the day,
      * never letting it go below zero. */
     suspend fun addWater(epochDay: Long, deltaMl: Int) {

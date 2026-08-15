@@ -6,6 +6,11 @@ import androidx.work.WorkerParameters
 import com.caloriecalc.app.CalorieCalcApp
 import java.time.LocalDate
 
+/**
+ * Runs twice for a given day: once at the user's configured reminder time (the daily periodic
+ * job), and — only if that first nudge went unanswered — again a few hours later via a one-time
+ * follow-up this worker queues for itself.
+ */
 class WeightReminderWorker(
     context: Context,
     params: WorkerParameters
@@ -17,10 +22,19 @@ class WeightReminderWorker(
         if (!profile.weightReminderEnabled) return Result.success()
 
         val today = LocalDate.now().toEpochDay()
-        val alreadyLogged = container.weightRepository.hasLoggedForDay(today)
-        if (!alreadyLogged) {
+        if (container.weightRepository.hasLoggedForDay(today)) return Result.success()
+
+        val isFollowUp = inputData.getBoolean(KEY_IS_FOLLOW_UP, false)
+        if (isFollowUp) {
+            NotificationHelper.showWeightFollowUpReminder(applicationContext)
+        } else {
             NotificationHelper.showWeightReminder(applicationContext)
+            container.reminderScheduler.scheduleWeightFollowUp(ReminderScheduler.FOLLOW_UP_DELAY_MINUTES)
         }
         return Result.success()
+    }
+
+    companion object {
+        const val KEY_IS_FOLLOW_UP = "is_follow_up"
     }
 }

@@ -18,4 +18,7 @@ interface WaterLogDao {
 
     @Query("SELECT * FROM water_logs WHERE epochDay = :epochDay LIMIT 1")
     suspend fun getForDay(epochDay: Long): WaterLog?
+
+    @Query("SELECT * FROM water_logs WHERE epochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY epochDay")
+    fun observeInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<WaterLog>>
 }

@@ -18,8 +18,8 @@ sealed class Screen(val route: String) {
     data object Profile : Screen("profile")
     data object Micronutrients : Screen("micronutrients")
 
-    data object MealLog : Screen("meal_log/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "meal_log/$mealSlotId"
+    data object MealLog : Screen("meal_log/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "meal_log/$mealSlotId/$epochDay"
     }
 
     data object AddFood : Screen("add_food/{mealSlotId}") {
@@ -49,6 +49,8 @@ sealed class Screen(val route: String) {
     data object ProteinShake : Screen("protein_shake/{mealSlotId}") {
         fun createRoute(mealSlotId: Long) = "protein_shake/$mealSlotId"
     }
+
+    data object WeeklySummary : Screen("weekly_summary")
 
     data object WorkoutSessionDetail : Screen("workout_session/{sessionId}") {
         fun createRoute(sessionId: Long) = "workout_session/$sessionId"

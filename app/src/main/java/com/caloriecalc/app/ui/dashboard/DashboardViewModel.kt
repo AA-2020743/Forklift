@@ -2,10 +2,13 @@ package com.caloriecalc.app.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.caloriecalc.app.data.local.dao.DayMacroTotals
 import com.caloriecalc.app.data.local.entity.ActivityLog
 import com.caloriecalc.app.data.local.entity.MealSlot
+import com.caloriecalc.app.data.local.entity.WaterLog
 import com.caloriecalc.app.data.local.entity.WorkoutSession
 import com.caloriecalc.app.data.repository.ActivityRepository
+import com.caloriecalc.app.data.repository.MealEntryWithFood
 import com.caloriecalc.app.data.repository.MealSlotRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
@@ -20,9 +23,11 @@ import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.WaterCalculator
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -39,6 +44,8 @@ private val emptyMacroProgress = MacroProgress(0.0, 0.0, 0.0, MacroStatus.IN_RAN
 
 data class DashboardUiState(
     val isLoading: Boolean = true,
+    val selectedEpochDay: Long = LocalDate.now().toEpochDay(),
+    val isToday: Boolean = true,
     val calorieConsumed: Int = 0,
     val calorieTarget: Int = 0,
     val proteinProgress: MacroProgress = emptyMacroProgress,
@@ -52,31 +59,46 @@ data class DashboardUiState(
     val waterTargetMl: Int = 2000
 )
 
+private data class DayScopedBundle(
+    val sessions: List<WorkoutSession>,
+    val activities: List<ActivityLog>,
+    val water: WaterLog?,
+    val totals: DayMacroTotals,
+    val entries: List<MealEntryWithFood>
+)
+
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class DashboardViewModel(
     profileRepository: ProfileRepository,
-    nutritionLogRepository: NutritionLogRepository,
+    private val nutritionLogRepository: NutritionLogRepository,
     mealSlotRepository: MealSlotRepository,
-    workoutRepository: WorkoutRepository,
+    private val workoutRepository: WorkoutRepository,
     private val activityRepository: ActivityRepository,
     private val waterRepository: WaterRepository
 ) : ViewModel() {
 
     private val today = LocalDate.now().toEpochDay()
+    private val selectedEpochDay = MutableStateFlow(today)
 
-    private val activityAndWater = combine(
-        workoutRepository.observeSessionsInRange(today, today),
-        activityRepository.observeForDay(today),
-        waterRepository.observeForDay(today)
-    ) { sessions, activities, water -> Triple(sessions, activities, water) }
+    private val dayScoped = selectedEpochDay.flatMapLatest { day ->
+        combine(
+            workoutRepository.observeSessionsInRange(day, day),
+            activityRepository.observeForDay(day),
+            waterRepository.observeForDay(day),
+            nutritionLogRepository.totalsForDay(day),
+            nutritionLogRepository.entriesForDay(day)
+        ) { sessions, activities, water, totals, entries ->
+            DayScopedBundle(sessions, activities, water, totals, entries)
+        }
+    }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         profileRepository.observeProfile(),
-        nutritionLogRepository.totalsForDay(today),
-        nutritionLogRepository.entriesForDay(today),
         mealSlotRepository.observeActive(),
-        activityAndWater
-    ) { profile, totals, entries, mealSlots, bundle ->
-        val (sessions, activities, water) = bundle
+        dayScoped,
+        selectedEpochDay
+    ) { profile, mealSlots, bundle, day ->
+        val (sessions, activities, water, totals, entries) = bundle
         val targets = NutritionCalculator.computeTargets(profile)
         val mealSummaries = mealSlots.map { slot ->
             val mealEntries = entries.filter { it.entry.mealSlotId == slot.id }
@@ -108,6 +130,8 @@ class DashboardViewModel(
 
         DashboardUiState(
             isLoading = false,
+            selectedEpochDay = day,
+            isToday = day == today,
             calorieConsumed = totals.calories.roundToInt(),
             calorieTarget = targets.calorieTarget,
             proteinProgress = MacroEvaluator.evaluate(totals.protein, targets.protein),
@@ -123,6 +147,7 @@ class DashboardViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
     fun logActivity(type: ActivityType, durationMinutes: Int, steps: Int?, caloriesOverride: Int?) {
+        if (selectedEpochDay.value != today) return
         viewModelScope.launch {
             activityRepository.logActivity(
                 epochDay = today,
@@ -136,10 +161,24 @@ class DashboardViewModel(
     }
 
     fun deleteActivity(activity: ActivityLog) {
+        if (selectedEpochDay.value != today) return
         viewModelScope.launch { activityRepository.deleteActivity(activity) }
     }
 
     fun addWater(deltaMl: Int) {
+        if (selectedEpochDay.value != today) return
         viewModelScope.launch { waterRepository.addWater(today, deltaMl) }
+    }
+
+    fun selectDay(epochDay: Long) {
+        selectedEpochDay.value = epochDay.coerceAtMost(today)
+    }
+
+    fun goToPreviousDay() {
+        selectedEpochDay.value -= 1
+    }
+
+    fun goToNextDay() {
+        selectedEpochDay.value = (selectedEpochDay.value + 1).coerceAtMost(today)
     }
 }

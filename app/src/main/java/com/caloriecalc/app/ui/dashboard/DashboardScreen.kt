@@ -20,10 +20,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RiceBowl
@@ -32,6 +36,8 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -42,9 +48,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,13 +84,24 @@ import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.theme.StatusApproaching
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
 import com.caloriecalc.app.ui.theme.StatusOnTarget
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+
+private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
+    today -> "Today"
+    today - 1 -> "Yesterday"
+    else -> LocalDate.ofEpochDay(epochDay).format(DateTimeFormatter.ofPattern("EEE, MMM d"))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    onMealClick: (mealSlotId: Long) -> Unit,
+    onMealClick: (mealSlotId: Long, epochDay: Long) -> Unit,
     onMicronutrientsClick: () -> Unit,
-    onQuickAdd: () -> Unit
+    onQuickAdd: () -> Unit,
+    onOpenTrends: () -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: DashboardViewModel = viewModel(
@@ -99,14 +118,21 @@ fun DashboardScreen(
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLogActivityDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val today = remember { LocalDate.now().toEpochDay() }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Today") },
+                title = { Text("CalorieCalc") },
                 actions = {
-                    IconButton(onClick = onQuickAdd) {
-                        Icon(Icons.Filled.Add, contentDescription = "Scan or add a food")
+                    IconButton(onClick = onOpenTrends) {
+                        Icon(Icons.Filled.QueryStats, contentDescription = "Weekly trends")
+                    }
+                    if (state.isToday) {
+                        IconButton(onClick = onQuickAdd) {
+                            Icon(Icons.Filled.Add, contentDescription = "Scan or add a food")
+                        }
                     }
                 }
             )
@@ -119,6 +145,30 @@ fun DashboardScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = viewModel::goToPreviousDay) {
+                        Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous day")
+                    }
+                    TextButton(onClick = { showDatePicker = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(dayLabel(state.selectedEpochDay, today))
+                    }
+                    IconButton(onClick = viewModel::goToNextDay, enabled = !state.isToday) {
+                        Icon(Icons.Filled.ChevronRight, contentDescription = "Next day")
+                    }
+                }
+            }
+
             item {
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
                     Column(
@@ -207,13 +257,16 @@ fun DashboardScreen(
                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Row(
+                        LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            listOf(250, 500, 1000).forEach { amountMl ->
-                                OutlinedButton(onClick = { viewModel.addWater(amountMl) }) {
+                            items(listOf(250, 500, 1000)) { amountMl ->
+                                OutlinedButton(
+                                    onClick = { viewModel.addWater(amountMl) },
+                                    enabled = state.isToday
+                                ) {
                                     Icon(
                                         imageVector = Icons.Filled.WaterDrop,
                                         contentDescription = null,
@@ -223,9 +276,13 @@ fun DashboardScreen(
                                     Text(if (amountMl >= 1000) "+1L" else "+${amountMl}ml")
                                 }
                             }
-                            Spacer(modifier = Modifier.weight(1f))
-                            IconButton(onClick = { viewModel.addWater(-250) }, enabled = state.waterMl > 0) {
-                                Icon(Icons.Filled.Remove, contentDescription = "Remove 250ml")
+                            item {
+                                IconButton(
+                                    onClick = { viewModel.addWater(-250) },
+                                    enabled = state.isToday && state.waterMl > 0
+                                ) {
+                                    Icon(Icons.Filled.Remove, contentDescription = "Remove 250ml")
+                                }
                             }
                         }
                     }
@@ -239,7 +296,7 @@ fun DashboardScreen(
             items(state.mealSummaries, key = { it.mealSlot.id }) { meal ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = { onMealClick(meal.mealSlot.id) },
+                    onClick = { onMealClick(meal.mealSlot.id, state.selectedEpochDay) },
                     colors = CardDefaults.cardColors()
                 ) {
                     Row(
@@ -296,7 +353,8 @@ fun DashboardScreen(
             if (state.activityRows.isEmpty()) {
                 item {
                     Text(
-                        "No activity logged yet today — walks, lifting, boxing, anything.",
+                        text = if (state.isToday) "No activity logged yet today — walks, lifting, boxing, anything."
+                        else "No activity logged for this day.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -310,17 +368,25 @@ fun DashboardScreen(
                             is ActivityRow.Cardio -> "cardio_${row.activity.id}"
                         }
                     }
-                ) { row -> ActivityRowCard(row, onDeleteCardio = viewModel::deleteActivity) }
+                ) { row ->
+                    ActivityRowCard(
+                        row = row,
+                        isToday = state.isToday,
+                        onDeleteCardio = viewModel::deleteActivity
+                    )
+                }
             }
 
-            item {
-                OutlinedButton(
-                    onClick = { showLogActivityDialog = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Log activity")
+            if (state.isToday) {
+                item {
+                    OutlinedButton(
+                        onClick = { showLogActivityDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Log activity")
+                    }
                 }
             }
         }
@@ -335,6 +401,34 @@ fun DashboardScreen(
                 showLogActivityDialog = false
             }
         )
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = LocalDate.ofEpochDay(state.selectedEpochDay)
+                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+            selectableDates = object : SelectableDates {
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                    utcTimeMillis <= System.currentTimeMillis()
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val epochDay = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay()
+                        viewModel.selectDay(epochDay)
+                    }
+                    showDatePicker = false
+                }) { Text("Select") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }
 
@@ -365,7 +459,7 @@ private fun ProteinPill(grams: Double) {
 }
 
 @Composable
-private fun ActivityRowCard(row: ActivityRow, onDeleteCardio: (ActivityLog) -> Unit) {
+private fun ActivityRowCard(row: ActivityRow, isToday: Boolean, onDeleteCardio: (ActivityLog) -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -409,8 +503,10 @@ private fun ActivityRowCard(row: ActivityRow, onDeleteCardio: (ActivityLog) -> U
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${row.activity.caloriesBurned} kcal", style = MaterialTheme.typography.bodyLarge)
-                        IconButton(onClick = { onDeleteCardio(row.activity) }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                        if (isToday) {
+                            IconButton(onClick = { onDeleteCardio(row.activity) }) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                            }
                         }
                     }
                 }

@@ -29,6 +29,7 @@ import com.caloriecalc.app.ui.foodlog.PhotoEstimateScreen
 import com.caloriecalc.app.ui.foodlog.ProteinShakeScreen
 import com.caloriecalc.app.ui.foodlog.QuantityScreen
 import com.caloriecalc.app.ui.profile.ProfileScreen
+import com.caloriecalc.app.ui.trends.TrendsScreen
 import com.caloriecalc.app.ui.weight.WeightScreen
 import com.caloriecalc.app.ui.workout.ExerciseHistoryScreen
 import com.caloriecalc.app.ui.workout.ExercisePickerScreen
@@ -37,6 +38,7 @@ import com.caloriecalc.app.ui.workout.TemplateEditorScreen
 import com.caloriecalc.app.ui.workout.TemplatesScreen
 import com.caloriecalc.app.ui.workout.WorkoutListScreen
 import com.caloriecalc.app.ui.workout.WorkoutSessionScreen
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 
 private val topLevelRoutes: Set<String> = bottomNavItems.map { it.screen.route }.toSet()
@@ -76,12 +78,17 @@ fun AppNavHost() {
         ) {
             composable(Screen.Dashboard.route) {
                 DashboardScreen(
-                    onMealClick = { mealSlotId ->
-                        navController.navigate(Screen.MealLog.createRoute(mealSlotId))
+                    onMealClick = { mealSlotId, epochDay ->
+                        navController.navigate(Screen.MealLog.createRoute(mealSlotId, epochDay))
                     },
                     onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) },
-                    onQuickAdd = { navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID)) }
+                    onQuickAdd = { navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID)) },
+                    onOpenTrends = { navController.navigate(Screen.WeeklySummary.route) }
                 )
+            }
+
+            composable(Screen.WeeklySummary.route) {
+                TrendsScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.Micronutrients.route) {
                 MicronutrientsScreen(onBack = { navController.popBackStack() })
@@ -134,11 +141,16 @@ fun AppNavHost() {
 
             composable(
                 route = Screen.MealLog.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 MealLogScreen(
                     mealSlotId = mealSlotId,
+                    epochDay = epochDay,
                     onBack = { navController.popBackStack() },
                     onAddFood = { navController.navigate(Screen.AddFood.createRoute(it)) }
                 )
@@ -156,7 +168,12 @@ fun AppNavHost() {
                     onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
                     onPhotoEstimate = { navController.navigate(Screen.PhotoEstimate.createRoute(it)) },
                     onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) },
-                    onQuickAdded = { mid -> navController.popBackStack(Screen.MealLog.createRoute(mid), false) },
+                    onQuickAdded = { mid ->
+                        navController.popBackStack(
+                            Screen.MealLog.createRoute(mid, LocalDate.now().toEpochDay()),
+                            false
+                        )
+                    },
                     onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) },
                     onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it)) }
                 )
@@ -194,7 +211,12 @@ fun AppNavHost() {
                 PhotoEstimateScreen(
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onLogged = { navController.popBackStack(Screen.MealLog.createRoute(mealSlotId), false) }
+                    onLogged = {
+                        navController.popBackStack(
+                            Screen.MealLog.createRoute(mealSlotId, LocalDate.now().toEpochDay()),
+                            false
+                        )
+                    }
                 )
             }
 
@@ -241,7 +263,10 @@ fun AppNavHost() {
                         if (mealSlotId == QUICK_ADD_MEAL_SLOT_ID) {
                             navController.popBackStack(Screen.Dashboard.route, false)
                         } else {
-                            navController.popBackStack(Screen.MealLog.createRoute(mealSlotId), false)
+                            navController.popBackStack(
+                                Screen.MealLog.createRoute(mealSlotId, LocalDate.now().toEpochDay()),
+                                false
+                            )
                         }
                     }
                 )
