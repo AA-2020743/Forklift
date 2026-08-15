@@ -4,12 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- A barbell whose plates are drawn as fork tines: fork (food) + lift (weights). All
+         geometry stays within the adaptive-icon safe zone (~33dp radius from center) so the
+         fork identity survives circular and squircle launcher masks alike. -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,24 C40,24 30,36 30,54 C30,72 40,84 54,84 C68,84 78,72 78,54 C78,44 74,36 68,30" />
-    <path
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:pathData="M54,38 L54,54 L64,60" />
+        android:fillColor="#F2A93B"
+        android:pathData="
+            M42,51 L66,51 L66,57 L42,57 Z
+            M33,42 L42,42 L42,66 L33,66 Z
+            M66,42 L75,42 L75,66 L66,66 Z
+            M25,42 L33,42 L33,48 L25,48 Z
+            M25,51 L33,51 L33,57 L25,57 Z
+            M25,60 L33,60 L33,66 L25,66 Z
+            M75,42 L83,42 L83,48 L75,48 Z
+            M75,51 L83,51 L83,57 L75,57 Z
+            M75,60 L83,60 L83,66 L75,66 Z" />
 </vector>

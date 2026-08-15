@@ -124,7 +124,7 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("CalorieCalc") },
+                title = { Text("Forklift") },
                 actions = {
                     IconButton(onClick = onOpenTrends) {
                         Icon(Icons.Filled.QueryStats, contentDescription = "Weekly trends")

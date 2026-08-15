@@ -1,4 +1,4 @@
-# CalorieCalc
+# Forklift
 
 An Android app for tracking calories/macros and lifting sessions together, with
 visual thresholds for protein/fat, muscle-coverage exercise suggestions, and a
