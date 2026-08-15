@@ -16,8 +16,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,6 +28,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -68,14 +71,22 @@ fun MealLogScreen(
     val viewModel: MealLogViewModel = viewModel(
         key = "meal_log_${mealSlotId}_$epochDay",
         factory = SimpleViewModelFactory {
-            MealLogViewModel(mealSlotId, epochDay, container.nutritionLogRepository, container.mealSlotRepository)
+            MealLogViewModel(
+                mealSlotId,
+                epochDay,
+                container.nutritionLogRepository,
+                container.mealSlotRepository,
+                container.mealTemplateRepository
+            )
         }
     )
     val entries by viewModel.entries.collectAsStateWithLifecycle()
+    val yesterdayEntries by viewModel.yesterdayEntries.collectAsStateWithLifecycle()
     val mealSlot by viewModel.mealSlot.collectAsStateWithLifecycle()
     val mealName = mealSlot?.name ?: "Meal"
     val isToday = viewModel.isToday
     var editingEntry by remember { mutableStateOf<MealEntryWithFood?>(null) }
+    var showSaveTemplateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -105,6 +116,13 @@ fun MealLogScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    if (isToday && entries.isNotEmpty()) {
+                        IconButton(onClick = { showSaveTemplateDialog = true }) {
+                            Icon(Icons.Filled.BookmarkAdd, contentDescription = "Save as template")
+                        }
+                    }
                 }
             )
         },
@@ -120,7 +138,8 @@ fun MealLogScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(padding)
+                    .padding(24.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -128,6 +147,14 @@ fun MealLogScreen(
                     if (isToday) "Nothing logged yet for ${mealName.lowercase()}."
                     else "Nothing was logged for ${mealName.lowercase()} on this day."
                 )
+                if (isToday && yesterdayEntries.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(onClick = { viewModel.repeatYesterday() }) {
+                        Icon(Icons.Filled.Replay, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Repeat yesterday (${yesterdayEntries.size} item${if (yesterdayEntries.size == 1) "" else "s"})")
+                    }
+                }
             }
         } else {
             val totalCalories = entries.sumOf { it.entry.calories }.roundToInt()
@@ -194,6 +221,43 @@ fun MealLogScreen(
             onSave = { grams ->
                 viewModel.updateEntryQuantity(currentEditingEntry, grams)
                 editingEntry = null
+            }
+        )
+    }
+
+    if (showSaveTemplateDialog) {
+        var templateName by remember { mutableStateOf(mealName) }
+        AlertDialog(
+            onDismissRequest = { showSaveTemplateDialog = false },
+            title = { Text("Save as template") },
+            text = {
+                Column {
+                    Text(
+                        "Saves these ${entries.size} item(s) so you can log them again in one tap.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = templateName,
+                        onValueChange = { templateName = it },
+                        label = { Text("Template name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.saveAsTemplate(templateName.trim().ifBlank { mealName })
+                        showSaveTemplateDialog = false
+                    },
+                    enabled = templateName.isNotBlank()
+                ) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSaveTemplateDialog = false }) { Text("Cancel") }
             }
         )
     }

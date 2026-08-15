@@ -207,4 +207,26 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
-val ALL_MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+/** v6 -> v7: adds reusable meal templates ("my usual breakfast"), two brand new tables. */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `meal_templates` (" +
+                "`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `createdAtEpochMillis` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `meal_template_items` (" +
+                "`id` INTEGER NOT NULL, `templateId` INTEGER NOT NULL, `foodItemId` INTEGER NOT NULL, " +
+                "`grams` REAL NOT NULL, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`templateId`) REFERENCES `meal_templates`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE, " +
+                "FOREIGN KEY(`foodItemId`) REFERENCES `food_items`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT)"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_template_items_templateId` ON `meal_template_items` (`templateId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_meal_template_items_foodItemId` ON `meal_template_items` (`foodItemId`)")
+    }
+}
+
+val ALL_MIGRATIONS: Array<Migration> = arrayOf(
+    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+)

@@ -2,8 +2,11 @@ package com.caloriecalc.app.ui.foodlog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.caloriecalc.app.data.local.dao.MealTemplateSummary
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.FoodRepository
+import com.caloriecalc.app.data.repository.MealTemplateRepository
+import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,8 +19,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddFoodViewModel(
-    private val foodRepository: FoodRepository
+    private val foodRepository: FoodRepository,
+    private val mealTemplateRepository: MealTemplateRepository
 ) : ViewModel() {
+
+    val templates: StateFlow<List<MealTemplateSummary>> = mealTemplateRepository.observeSummaries()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -58,4 +65,13 @@ class AddFoodViewModel(
             foodRepository.markUsed(food.id)
             food
         }
+
+    /** Templates always apply to today — quick-add flows never target a past day. */
+    suspend fun applyTemplate(templateId: Long, mealSlotId: Long) {
+        mealTemplateRepository.applyTemplate(templateId, mealSlotId, LocalDate.now().toEpochDay())
+    }
+
+    fun deleteTemplate(id: Long) {
+        viewModelScope.launch { mealTemplateRepository.deleteTemplate(id) }
+    }
 }

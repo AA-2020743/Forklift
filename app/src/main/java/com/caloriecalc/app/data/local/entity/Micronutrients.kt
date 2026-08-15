@@ -35,4 +35,28 @@ data class Micronutrients(
         magnesiumMg = magnesiumMg?.times(factor),
         zincMg = zincMg?.times(factor)
     )
+
+    /**
+     * Combines two absolute (already-scaled) micronutrient snapshots, e.g. when totaling a
+     * recipe's ingredients. A field stays null only when neither side reports it — an
+     * ingredient that's simply silent on, say, iron shouldn't erase a known amount from
+     * another ingredient.
+     */
+    operator fun plus(other: Micronutrients): Micronutrients = Micronutrients(
+        fiberGrams = sumOrNull(fiberGrams, other.fiberGrams),
+        sugarGrams = sumOrNull(sugarGrams, other.sugarGrams),
+        saturatedFatGrams = sumOrNull(saturatedFatGrams, other.saturatedFatGrams),
+        sodiumMg = sumOrNull(sodiumMg, other.sodiumMg),
+        potassiumMg = sumOrNull(potassiumMg, other.potassiumMg),
+        calciumMg = sumOrNull(calciumMg, other.calciumMg),
+        ironMg = sumOrNull(ironMg, other.ironMg),
+        vitaminCMg = sumOrNull(vitaminCMg, other.vitaminCMg),
+        vitaminDMcg = sumOrNull(vitaminDMcg, other.vitaminDMcg),
+        vitaminB12Mcg = sumOrNull(vitaminB12Mcg, other.vitaminB12Mcg),
+        magnesiumMg = sumOrNull(magnesiumMg, other.magnesiumMg),
+        zincMg = sumOrNull(zincMg, other.zincMg)
+    )
+
+    private fun sumOrNull(a: Double?, b: Double?): Double? =
+        if (a == null && b == null) null else (a ?: 0.0) + (b ?: 0.0)
 }

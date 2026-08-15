@@ -28,6 +28,7 @@ import com.caloriecalc.app.ui.foodlog.MealLogScreen
 import com.caloriecalc.app.ui.foodlog.PhotoEstimateScreen
 import com.caloriecalc.app.ui.foodlog.ProteinShakeScreen
 import com.caloriecalc.app.ui.foodlog.QuantityScreen
+import com.caloriecalc.app.ui.foodlog.RecipeBuilderScreen
 import com.caloriecalc.app.ui.profile.ProfileScreen
 import com.caloriecalc.app.ui.trends.TrendsScreen
 import com.caloriecalc.app.ui.weight.WeightScreen
@@ -175,7 +176,20 @@ fun AppNavHost() {
                         )
                     },
                     onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) },
-                    onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it)) }
+                    onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it)) },
+                    onCreateRecipe = { navController.navigate(Screen.RecipeBuilder.createRoute(it)) }
+                )
+            }
+
+            composable(
+                route = Screen.RecipeBuilder.route,
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+            ) { entry ->
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                RecipeBuilderScreen(
+                    mealSlotId = mealSlotId,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
                 )
             }
 

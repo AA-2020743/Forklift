@@ -7,6 +7,7 @@ import com.caloriecalc.app.data.local.dao.MealEntryDao
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.MealEntry
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 data class MealEntryWithFood(val entry: MealEntry, val food: FoodItem)
@@ -46,6 +47,17 @@ class NutritionLogRepository(
     }
 
     suspend fun deleteEntry(entry: MealEntry) = mealEntryDao.delete(entry)
+
+    /** Copies every entry logged for a meal on one day onto another — the "repeat yesterday"
+     * quick action. Each copy gets a fresh id and logged-at timestamp; the source day is untouched. */
+    suspend fun repeatMeal(fromEpochDay: Long, toEpochDay: Long, mealSlotId: Long) {
+        val sourceEntries = mealEntryDao.getEntriesForMeal(fromEpochDay, mealSlotId).first()
+        val loggedAt = System.currentTimeMillis()
+        sourceEntries.forEach { entry ->
+            mealEntryDao.insert(entry.copy(id = 0, epochDay = toEpochDay, loggedAtEpochMillis = loggedAt))
+            foodDao.markUsed(entry.foodItemId, loggedAt)
+        }
+    }
 
     /** Re-derives calories/macros/micronutrients for a logged entry from its food's per-100g
      * values at a new gram amount — used when correcting how much of something was actually eaten. */

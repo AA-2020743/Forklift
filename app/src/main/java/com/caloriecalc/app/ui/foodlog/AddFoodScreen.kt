@@ -18,7 +18,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restaurant
@@ -52,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.caloriecalc.app.data.local.dao.MealTemplateSummary
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
@@ -73,11 +77,12 @@ fun AddFoodScreen(
     onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit,
     onQuickAdded: (Long) -> Unit,
     onEditFood: (foodId: Long) -> Unit,
-    onCreateProteinShake: (Long) -> Unit
+    onCreateProteinShake: (Long) -> Unit,
+    onCreateRecipe: (Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: AddFoodViewModel = viewModel(
-        factory = SimpleViewModelFactory { AddFoodViewModel(container.foodRepository) }
+        factory = SimpleViewModelFactory { AddFoodViewModel(container.foodRepository, container.mealTemplateRepository) }
     )
     val query by viewModel.query.collectAsStateWithLifecycle()
     val localResults by viewModel.localResults.collectAsStateWithLifecycle()
@@ -85,6 +90,7 @@ fun AddFoodScreen(
     val frequent by viewModel.frequent.collectAsStateWithLifecycle()
     val onlineResults by viewModel.onlineResults.collectAsStateWithLifecycle()
     val isSearchingOnline by viewModel.isSearchingOnline.collectAsStateWithLifecycle()
+    val templates by viewModel.templates.collectAsStateWithLifecycle()
 
     val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
     var mealName by remember { mutableStateOf("meal") }
@@ -130,6 +136,9 @@ fun AddFoodScreen(
                         IconButton(onClick = { onCreateProteinShake(mealSlotId) }) {
                             Icon(Icons.Filled.Blender, contentDescription = "Create protein shake")
                         }
+                        IconButton(onClick = { onCreateRecipe(mealSlotId) }) {
+                            Icon(Icons.Filled.DinnerDining, contentDescription = "Build a recipe")
+                        }
                         IconButton(onClick = { onManualEntry(mealSlotId) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Enter manually")
                         }
@@ -149,6 +158,9 @@ fun AddFoodScreen(
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Search") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Recent") })
                     Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Frequent") })
+                    if (!isQuickAdd) {
+                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Templates") })
+                    }
                 }
             }
         }
@@ -169,7 +181,17 @@ fun AddFoodScreen(
                     onEditFood = onEditFood
                 )
                 1 -> FoodListContent(recent, onSelect, onEditFood, "No recently used foods yet.")
-                else -> FoodListContent(frequent, onSelect, onEditFood, "No frequently used foods yet.")
+                2 -> FoodListContent(frequent, onSelect, onEditFood, "No frequently used foods yet.")
+                else -> TemplatesTabContent(
+                    templates = templates,
+                    onApply = { templateId ->
+                        scope.launch {
+                            viewModel.applyTemplate(templateId, mealSlotId)
+                            onQuickAdded(mealSlotId)
+                        }
+                    },
+                    onDelete = viewModel::deleteTemplate
+                )
             }
         }
     }
@@ -329,6 +351,48 @@ private fun FoodListContent(
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(foods, key = { it.id }) { FoodRow(it, onSelect, onEditFood) }
+    }
+}
+
+@Composable
+private fun TemplatesTabContent(
+    templates: List<MealTemplateSummary>,
+    onApply: (Long) -> Unit,
+    onDelete: (Long) -> Unit
+) {
+    if (templates.isEmpty()) {
+        EmptyState("No saved templates yet. Log a meal, then \"Save as template\" from its screen.")
+        return
+    }
+    LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(templates, key = { it.id }) { template ->
+            Card(modifier = Modifier.fillMaxWidth(), onClick = { onApply(template.id) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Bookmark,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(template.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = "${template.itemCount} item${if (template.itemCount == 1) "" else "s"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { onDelete(template.id) }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Delete ${template.name}")
+                    }
+                }
+            }
+        }
     }
 }
 

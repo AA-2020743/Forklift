@@ -50,6 +50,10 @@ sealed class Screen(val route: String) {
         fun createRoute(mealSlotId: Long) = "protein_shake/$mealSlotId"
     }
 
+    data object RecipeBuilder : Screen("recipe_builder/{mealSlotId}") {
+        fun createRoute(mealSlotId: Long) = "recipe_builder/$mealSlotId"
+    }
+
     data object WeeklySummary : Screen("weekly_summary")
 
     data object WorkoutSessionDetail : Screen("workout_session/{sessionId}") {
