@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.domain.MacroProgress
 import com.caloriecalc.app.domain.MacroStatus
 import kotlin.math.abs
-import kotlin.math.roundToInt
 
 /**
  * Shows consumed grams against a healthy min-max range (not a single target to hit): a shaded
@@ -61,8 +60,8 @@ fun MacroRangeBar(
                 Text(text = label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
             }
             Text(
-                text = "${progress.consumedGrams.roundToInt()} $unit " +
-                    "(${progress.minGrams.roundToInt()}-${progress.maxGrams.roundToInt()} $unit)",
+                text = "${formatGrams(progress.consumedGrams)} $unit " +
+                    "(${formatGrams(progress.minGrams)}-${formatGrams(progress.maxGrams)} $unit)",
                 style = MaterialTheme.typography.bodyMedium
             )
         }

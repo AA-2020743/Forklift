@@ -70,6 +70,7 @@ import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.MacroRangeBar
 import com.caloriecalc.app.ui.components.SectionHeader
 import com.caloriecalc.app.ui.components.activityTypeIcon
+import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
@@ -281,7 +282,7 @@ fun DashboardScreen(
 /** Small rounded call-out for a main meal's protein — reuses the same protein icon as the
  * Macros card so it reads as "the same nutrient" at a glance. */
 @Composable
-private fun ProteinPill(grams: Int) {
+private fun ProteinPill(grams: Double) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
@@ -297,7 +298,7 @@ private fun ProteinPill(grams: Int) {
         )
         Spacer(modifier = Modifier.width(3.dp))
         Text(
-            text = "${grams}g protein",
+            text = "${formatGrams(grams)}g protein",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.tertiary
         )

@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
@@ -168,7 +169,7 @@ fun QuantityScreen(
                     FilterChip(
                         selected = mode == QuantityMode.SERVINGS,
                         onClick = { mode = QuantityMode.SERVINGS; amountText = "1" },
-                        label = { Text("Servings (${currentFood.servingSizeGrams.roundToInt()} g${currentFood.servingName?.let { " · $it" } ?: ""})") }
+                        label = { Text("Servings (${formatGrams(currentFood.servingSizeGrams)} g${currentFood.servingName?.let { " · $it" } ?: ""})") }
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -217,11 +218,12 @@ fun QuantityScreen(
 
 @Composable
 private fun NutrientRow(label: String, value: Double, unit: String) {
+    val displayValue = if (unit == "g") formatGrams(value) else value.roundToInt().toString()
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
-        Text("${value.roundToInt()} $unit", style = MaterialTheme.typography.bodyMedium)
+        Text("$displayValue $unit", style = MaterialTheme.typography.bodyMedium)
     }
 }

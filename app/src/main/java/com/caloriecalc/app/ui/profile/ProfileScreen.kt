@@ -67,6 +67,7 @@ import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.Sex
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.SectionHeader
+import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
@@ -171,13 +172,13 @@ fun ProfileScreen() {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text("Calories: ${liveTargets.calorieTarget} kcal")
                         Text(
-                            "Protein: ${liveTargets.protein.minGrams.roundToInt()}-" +
-                                "${liveTargets.protein.maxGrams.roundToInt()} g"
+                            "Protein: ${formatGrams(liveTargets.protein.minGrams)}-" +
+                                "${formatGrams(liveTargets.protein.maxGrams)} g"
                         )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                "Fat: ${liveTargets.fat.minGrams.roundToInt()}-" +
-                                    "${liveTargets.fat.maxGrams.roundToInt()} g"
+                                "Fat: ${formatGrams(liveTargets.fat.minGrams)}-" +
+                                    "${formatGrams(liveTargets.fat.maxGrams)} g"
                             )
                             Text(
                                 "(${fatMinPercentOfCalories.roundToInt()}-${fatMaxPercentOfCalories.roundToInt()}% of calories)",
@@ -187,8 +188,8 @@ fun ProfileScreen() {
                             )
                         }
                         Text(
-                            "Carbs: ${liveTargets.carbs.minGrams.roundToInt()}-" +
-                                "${liveTargets.carbs.maxGrams.roundToInt()} g"
+                            "Carbs: ${formatGrams(liveTargets.carbs.minGrams)}-" +
+                                "${formatGrams(liveTargets.carbs.maxGrams)} g"
                         )
                         if (minimumsExceedCalories) {
                             Spacer(modifier = Modifier.height(4.dp))

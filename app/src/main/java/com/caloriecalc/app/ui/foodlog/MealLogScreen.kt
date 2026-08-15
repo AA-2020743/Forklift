@@ -35,6 +35,7 @@ import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.foodItemIcon
+import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.components.stableAccentColor
@@ -128,7 +129,7 @@ fun MealLogScreen(
                                 Column {
                                     Text(item.food.name, style = MaterialTheme.typography.bodyLarge)
                                     Text(
-                                        text = "${item.entry.grams.roundToInt()} g · ${item.entry.calories.roundToInt()} kcal",
+                                        text = "${formatGrams(item.entry.grams)} g · ${item.entry.calories.roundToInt()} kcal",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
