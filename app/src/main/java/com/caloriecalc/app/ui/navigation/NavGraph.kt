@@ -26,6 +26,7 @@ import com.caloriecalc.app.ui.foodlog.EditFoodScreen
 import com.caloriecalc.app.ui.foodlog.ManualFoodEntryScreen
 import com.caloriecalc.app.ui.foodlog.MealLogScreen
 import com.caloriecalc.app.ui.foodlog.PhotoEstimateScreen
+import com.caloriecalc.app.ui.foodlog.ProteinShakeScreen
 import com.caloriecalc.app.ui.foodlog.QuantityScreen
 import com.caloriecalc.app.ui.profile.ProfileScreen
 import com.caloriecalc.app.ui.weight.WeightScreen
@@ -156,7 +157,8 @@ fun AppNavHost() {
                     onPhotoEstimate = { navController.navigate(Screen.PhotoEstimate.createRoute(it)) },
                     onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) },
                     onQuickAdded = { mid -> navController.popBackStack(Screen.MealLog.createRoute(mid), false) },
-                    onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) }
+                    onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) },
+                    onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it)) }
                 )
             }
 
@@ -169,6 +171,18 @@ fun AppNavHost() {
                     foodId = foodId,
                     onBack = { navController.popBackStack() },
                     onSaved = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Screen.ProteinShake.route,
+                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+            ) { entry ->
+                val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                ProteinShakeScreen(
+                    mealSlotId = mealSlotId,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
                 )
             }
 

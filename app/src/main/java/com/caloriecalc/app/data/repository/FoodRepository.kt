@@ -85,7 +85,8 @@ class FoodRepository(
         fatPer100g: Double,
         carbsPer100g: Double,
         servingSizeGrams: Double?,
-        servingName: String?
+        servingName: String?,
+        micronutrients: Micronutrients = Micronutrients()
     ): FoodItem {
         val food = FoodItem(
             name = name,
@@ -94,6 +95,7 @@ class FoodRepository(
             proteinPer100g = proteinPer100g,
             fatPer100g = fatPer100g,
             carbsPer100g = carbsPer100g,
+            micronutrients = micronutrients,
             servingSizeGrams = servingSizeGrams,
             servingName = servingName,
             source = FoodSource.MANUAL

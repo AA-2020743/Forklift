@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
@@ -71,7 +72,8 @@ fun AddFoodScreen(
     onPhotoEstimate: (Long) -> Unit,
     onFoodSelected: (foodId: Long, mealSlotId: Long) -> Unit,
     onQuickAdded: (Long) -> Unit,
-    onEditFood: (foodId: Long) -> Unit
+    onEditFood: (foodId: Long) -> Unit,
+    onCreateProteinShake: (Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: AddFoodViewModel = viewModel(
@@ -124,6 +126,9 @@ fun AddFoodScreen(
                         }
                         IconButton(onClick = { onScanBarcode(mealSlotId) }) {
                             Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
+                        }
+                        IconButton(onClick = { onCreateProteinShake(mealSlotId) }) {
+                            Icon(Icons.Filled.Blender, contentDescription = "Create protein shake")
                         }
                         IconButton(onClick = { onManualEntry(mealSlotId) }) {
                             Icon(Icons.Filled.Add, contentDescription = "Enter manually")
