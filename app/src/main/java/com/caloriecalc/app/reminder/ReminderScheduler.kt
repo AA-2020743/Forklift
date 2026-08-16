@@ -2,10 +2,8 @@ package com.caloriecalc.app.reminder
 
 import android.content.Context
 import androidx.work.Data
-import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.time.Duration
 import java.time.LocalDateTime
@@ -13,19 +11,29 @@ import java.util.concurrent.TimeUnit
 
 class ReminderScheduler(private val context: Context) {
 
+    /**
+     * Schedules the next firing of the daily weight reminder as a one-time job, not a
+     * PeriodicWorkRequest. A `PeriodicWorkRequestBuilder(1, TimeUnit.DAYS)` with no flex
+     * interval treats its *entire* 24h period as eligible to run in, not just the moment the
+     * initial delay lands on — so after the first correctly-timed fire, Android is free to run
+     * every later occurrence any time that day it finds convenient for batching, which in
+     * practice drifts the reminder earlier and earlier. WeightReminderWorker re-calls this
+     * itself after each firing to queue the next day's exact time, so every occurrence gets a
+     * freshly computed initial delay instead of drifting inside an unconstrained window.
+     */
     fun scheduleWeightReminder(hour: Int, minute: Int) {
         val now = LocalDateTime.now()
         var target = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
         if (!target.isAfter(now)) target = target.plusDays(1)
         val initialDelayMinutes = Duration.between(now, target).toMinutes().coerceAtLeast(0)
 
-        val request = PeriodicWorkRequestBuilder<WeightReminderWorker>(1, TimeUnit.DAYS)
+        val request = OneTimeWorkRequestBuilder<WeightReminderWorker>()
             .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
             .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        WorkManager.getInstance(context).enqueueUniqueWork(
             WORK_NAME,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingWorkPolicy.REPLACE,
             request
         )
     }
