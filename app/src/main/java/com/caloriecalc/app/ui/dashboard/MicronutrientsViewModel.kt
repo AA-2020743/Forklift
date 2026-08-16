@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
+import com.caloriecalc.app.domain.MicronutrientEstimator
 import com.caloriecalc.app.domain.MicronutrientReference
 import com.caloriecalc.app.domain.MicronutrientTarget
 import java.time.LocalDate
@@ -14,7 +15,14 @@ import kotlinx.coroutines.flow.stateIn
 
 data class MicronutrientRow(val target: MicronutrientTarget, val consumed: Double)
 
-data class MicronutrientsUiState(val rows: List<MicronutrientRow> = emptyList())
+data class MicronutrientsUiState(
+    val rows: List<MicronutrientRow> = emptyList(),
+    /** How many of today's logged foods actually carry micronutrient data. */
+    val foodsWithData: Int = 0,
+    val foodsLogged: Int = 0,
+    /** Names of logged foods contributing nothing, so the gap is nameable rather than mysterious. */
+    val foodsMissingData: List<String> = emptyList()
+)
 
 class MicronutrientsViewModel(
     profileRepository: ProfileRepository,
@@ -25,8 +33,9 @@ class MicronutrientsViewModel(
 
     val uiState: StateFlow<MicronutrientsUiState> = combine(
         profileRepository.observeProfile(),
-        nutritionLogRepository.totalsForDay(today)
-    ) { profile, totals ->
+        nutritionLogRepository.totalsForDay(today),
+        nutritionLogRepository.entriesForDay(today)
+    ) { profile, totals, entries ->
         val consumedByLabel = mapOf(
             "Fiber" to totals.fiberGrams,
             "Sugar" to totals.sugarGrams,
@@ -44,6 +53,15 @@ class MicronutrientsViewModel(
         val rows = MicronutrientReference.targets(profile.sex).map { target ->
             MicronutrientRow(target, consumedByLabel[target.label] ?: 0.0)
         }
-        MicronutrientsUiState(rows)
+        val missing = entries
+            .filter { MicronutrientEstimator.isEmpty(it.entry.micronutrients) }
+            .map { it.food.name }
+            .distinct()
+        MicronutrientsUiState(
+            rows = rows,
+            foodsWithData = entries.size - entries.count { MicronutrientEstimator.isEmpty(it.entry.micronutrients) },
+            foodsLogged = entries.size,
+            foodsMissingData = missing
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MicronutrientsUiState())
 }

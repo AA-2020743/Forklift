@@ -91,6 +91,13 @@ class FoodRepository(
         /** Null falls back to a keyword guess from the name, so drinks hydrate without extra typing. */
         waterContentPercent: Double? = null
     ): FoodItem {
+        // Nothing supplied? Fall back to a reference profile for the name. Without this, every
+        // hand-entered food contributes nothing and the Micronutrients screen reads all zeroes.
+        val resolvedMicros = if (MicronutrientEstimator.isEmpty(micronutrients)) {
+            MicronutrientEstimator.guessPer100g(name) ?: micronutrients
+        } else {
+            micronutrients
+        }
         val food = FoodItem(
             name = name,
             brand = brand,
@@ -98,7 +105,7 @@ class FoodRepository(
             proteinPer100g = proteinPer100g,
             fatPer100g = fatPer100g,
             carbsPer100g = carbsPer100g,
-            micronutrients = micronutrients,
+            micronutrients = resolvedMicros,
             waterContentPercent = waterContentPercent ?: HydrationCalculator.guessWaterContentPercent(name),
             servingSizeGrams = servingSizeGrams,
             servingName = servingName,

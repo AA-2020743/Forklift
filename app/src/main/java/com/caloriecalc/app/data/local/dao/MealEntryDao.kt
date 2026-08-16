@@ -81,6 +81,9 @@ interface MealEntryDao {
     )
     fun getHydrationInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayHydration>>
 
+    @Query("SELECT * FROM meal_entries WHERE foodItemId = :foodItemId")
+    suspend fun getEntriesForFood(foodItemId: Long): List<MealEntry>
+
     /** The most recent entry that delivered at least [minProteinGrams] of protein. */
     @Query(
         """

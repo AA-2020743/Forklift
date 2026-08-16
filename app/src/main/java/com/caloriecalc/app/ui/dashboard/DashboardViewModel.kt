@@ -52,6 +52,10 @@ data class DashboardUiState(
     val fatProgress: MacroProgress = emptyMacroProgress,
     val carbProgress: MacroProgress = emptyMacroProgress,
     val mealSummaries: List<MealSummary> = emptyList(),
+    /** Per-food contributions for the day, so a macro row can explain what made it up. */
+    val proteinContributions: List<MacroContribution> = emptyList(),
+    val fatContributions: List<MacroContribution> = emptyList(),
+    val carbContributions: List<MacroContribution> = emptyList(),
     val bodyWeightKg: Double = 75.0,
     val activityRows: List<ActivityRow> = emptyList(),
     val totalCaloriesBurned: Int = 0,
@@ -122,6 +126,18 @@ class DashboardViewModel(
             )
         }
 
+        val mealNameById = mealSlots.associate { it.id to it.name }
+        fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =
+            entries.filter { macroOf(it.entry) > 0.0 }
+                .map { item ->
+                    MacroContribution(
+                        foodName = item.food.name,
+                        mealName = mealNameById[item.entry.mealSlotId] ?: "Meal",
+                        grams = item.entry.grams,
+                        macroGrams = macroOf(item.entry)
+                    )
+                }
+
         val liftingRows = sessions.map { session ->
             val durationMinutes = session.endedAtEpochMillis?.let { end ->
                 ((end - session.startedAtEpochMillis) / 60_000L).toInt().coerceAtLeast(0)
@@ -150,6 +166,9 @@ class DashboardViewModel(
             fatProgress = MacroEvaluator.evaluate(totals.fat, targets.fat),
             carbProgress = MacroEvaluator.evaluate(totals.carbs, targets.carbs),
             mealSummaries = mealSummaries,
+            proteinContributions = contributions { it.protein },
+            fatContributions = contributions { it.fat },
+            carbContributions = contributions { it.carbs },
             bodyWeightKg = profile.bodyWeightKg,
             activityRows = activityRows,
             totalCaloriesBurned = totalBurned,
@@ -178,9 +197,10 @@ class DashboardViewModel(
         viewModelScope.launch { activityRepository.deleteActivity(activity) }
     }
 
+    /** Applies to whichever day is being viewed, so past days can be corrected like meals can. */
     fun addWater(deltaMl: Int) {
-        if (selectedEpochDay.value != today) return
-        viewModelScope.launch { waterRepository.addWater(today, deltaMl) }
+        val day = selectedEpochDay.value
+        viewModelScope.launch { waterRepository.addWater(day, deltaMl) }
     }
 
     fun selectDay(epochDay: Long) {

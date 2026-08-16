@@ -88,6 +88,9 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
+/** Which macro's breakdown sheet is open, if any. */
+private enum class BreakdownMacro { PROTEIN, FAT, CARBS }
+
 private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
     today -> "Today"
     today - 1 -> "Yesterday"
@@ -118,6 +121,7 @@ fun DashboardScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showLogActivityDialog by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var breakdownMacro by remember { mutableStateOf<BreakdownMacro?>(null) }
     val today = remember { LocalDate.now().toEpochDay() }
 
     Scaffold(
@@ -197,11 +201,26 @@ fun DashboardScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionHeader(Icons.Filled.BarChart, "Macros")
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroRangeBar(label = "Protein", progress = state.proteinProgress, icon = Icons.Filled.SetMeal)
+                        MacroRangeBar(
+                            label = "Protein",
+                            progress = state.proteinProgress,
+                            icon = Icons.Filled.SetMeal,
+                            onClick = { breakdownMacro = BreakdownMacro.PROTEIN }
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroRangeBar(label = "Fat", progress = state.fatProgress, icon = Icons.Filled.WaterDrop)
+                        MacroRangeBar(
+                            label = "Fat",
+                            progress = state.fatProgress,
+                            icon = Icons.Filled.WaterDrop,
+                            onClick = { breakdownMacro = BreakdownMacro.FAT }
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
-                        MacroRangeBar(label = "Carbs", progress = state.carbProgress, icon = Icons.Filled.RiceBowl)
+                        MacroRangeBar(
+                            label = "Carbs",
+                            progress = state.carbProgress,
+                            icon = Icons.Filled.RiceBowl,
+                            onClick = { breakdownMacro = BreakdownMacro.CARBS }
+                        )
                     }
                 }
             }
@@ -423,6 +442,31 @@ fun DashboardScreen(
                 showLogActivityDialog = false
             }
         )
+    }
+
+    when (breakdownMacro) {
+        BreakdownMacro.PROTEIN -> MacroBreakdownSheet(
+            macroLabel = "Protein",
+            macroIcon = Icons.Filled.SetMeal,
+            accent = MaterialTheme.colorScheme.tertiary,
+            contributions = state.proteinContributions,
+            onDismiss = { breakdownMacro = null }
+        )
+        BreakdownMacro.FAT -> MacroBreakdownSheet(
+            macroLabel = "Fat",
+            macroIcon = Icons.Filled.WaterDrop,
+            accent = MaterialTheme.colorScheme.secondary,
+            contributions = state.fatContributions,
+            onDismiss = { breakdownMacro = null }
+        )
+        BreakdownMacro.CARBS -> MacroBreakdownSheet(
+            macroLabel = "Carbs",
+            macroIcon = Icons.Filled.RiceBowl,
+            accent = MaterialTheme.colorScheme.primary,
+            contributions = state.carbContributions,
+            onDismiss = { breakdownMacro = null }
+        )
+        null -> Unit
     }
 
     if (showDatePicker) {

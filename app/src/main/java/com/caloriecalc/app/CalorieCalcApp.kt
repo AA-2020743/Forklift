@@ -24,6 +24,9 @@ class CalorieCalcApp : Application() {
         applicationScope.launch {
             appContainer.workoutRepository.ensureSeeded()
             appContainer.mealSlotRepository.ensureSeeded()
+            // Repairs foods saved before micronutrient auto-fill existed; a no-op once done,
+            // since it only touches foods that still have nothing recorded.
+            appContainer.micronutrientBackfill.run()
             val profile = appContainer.profileRepository.getProfile()
             if (profile.weightReminderEnabled) {
                 appContainer.reminderScheduler.scheduleWeightReminder(

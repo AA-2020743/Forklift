@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.domain.MicronutrientEstimator
 import kotlinx.coroutines.launch
 
 /**
@@ -86,6 +87,18 @@ fun EditFoodScreen(
     var waterContent by remember(food) {
         mutableStateOf(food.waterContentPercent?.let { formatMacroValue(it) } ?: "")
     }
+    // Offer a reference profile when the stored food has no micronutrients at all, so an old
+    // food entered before this existed can be filled in with one tap rather than by hand.
+    val microGuess = remember(food) {
+        if (MicronutrientEstimator.isEmpty(food.micronutrients)) {
+            MicronutrientEstimator.guessPer100g(food.name)
+        } else {
+            null
+        }
+    }
+    var microDraft by remember(food) {
+        mutableStateOf(MicronutrientDraft.from(microGuess ?: food.micronutrients))
+    }
 
     val onBasisChange: (MacroBasis) -> Unit = { newBasis ->
         val grams = servingGrams.toDoubleOrNull()
@@ -118,8 +131,9 @@ fun EditFoodScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                "Changes only apply going forward — meals you've already logged with this food " +
-                    "keep the values they were logged with.",
+                "Changes apply going forward — meals already logged with this food keep the " +
+                    "values they were logged with. The exception is micronutrients: entries that " +
+                    "had none recorded pick up whatever you add here.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -149,6 +163,13 @@ fun EditFoodScreen(
                 onWaterContentPercentChange = { waterContent = it }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+            MicronutrientFields(
+                draft = microDraft,
+                onChange = { microDraft = it },
+                prefilled = microGuess != null
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
@@ -164,9 +185,13 @@ fun EditFoodScreen(
                                 carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                                 servingSizeGrams = servingGramsValue,
                                 servingName = servingName.trim().takeIf { it.isNotBlank() },
+                                micronutrients = microDraft.toMicronutrients(),
                                 waterContentPercent = waterContent.toDoubleOrNull()?.coerceIn(0.0, 100.0)
                             )
                         )
+                        // Entries logged before this food had micronutrient data get the new
+                        // values; ones that already had data keep what they were logged with.
+                        container.micronutrientBackfill.resyncEntriesMissingData(food.id)
                         onSaved()
                     }
                 },

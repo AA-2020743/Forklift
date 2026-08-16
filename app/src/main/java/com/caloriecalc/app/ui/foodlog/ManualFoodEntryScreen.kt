@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.domain.HydrationCalculator
+import com.caloriecalc.app.domain.MicronutrientEstimator
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,13 +52,22 @@ fun ManualFoodEntryScreen(
     var servingGrams by remember { mutableStateOf("") }
     var servingName by remember { mutableStateOf("") }
     var waterContent by remember { mutableStateOf("") }
-    // Pre-fill the water guess from the name as it's typed, but never overwrite a manual edit.
+    var microDraft by remember { mutableStateOf(MicronutrientDraft()) }
+    var microPrefilled by remember { mutableStateOf(false) }
+    // Pre-fill water and micronutrient guesses from the name as it's typed, but never
+    // overwrite anything the user has edited by hand.
     var waterContentEdited by remember { mutableStateOf(false) }
+    var microEdited by remember { mutableStateOf(false) }
     LaunchedEffect(name) {
         if (!waterContentEdited) {
             waterContent = HydrationCalculator.guessWaterContentPercent(name)
                 ?.let { formatMacroValue(it) }
                 .orEmpty()
+        }
+        if (!microEdited) {
+            val guess = MicronutrientEstimator.guessPer100g(name)
+            microDraft = guess?.let { MicronutrientDraft.from(it) } ?: MicronutrientDraft()
+            microPrefilled = guess != null
         }
     }
 
@@ -118,6 +128,13 @@ fun ManualFoodEntryScreen(
                 }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+            MicronutrientFields(
+                draft = microDraft,
+                onChange = { microDraft = it; microEdited = true },
+                prefilled = microPrefilled
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
@@ -132,6 +149,7 @@ fun ManualFoodEntryScreen(
                             carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                             servingSizeGrams = servingGramsValue,
                             servingName = servingName.trim().takeIf { it.isNotBlank() },
+                            micronutrients = microDraft.toMicronutrients(),
                             waterContentPercent = waterContent.toDoubleOrNull()?.coerceIn(0.0, 100.0)
                         )
                         onSaved(food.id, mealSlotId)
