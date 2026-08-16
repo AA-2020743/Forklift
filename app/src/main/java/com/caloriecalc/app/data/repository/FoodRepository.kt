@@ -8,6 +8,7 @@ import com.caloriecalc.app.data.remote.NutrimentsDto
 import com.caloriecalc.app.data.remote.OpenFoodFactsApi
 import com.caloriecalc.app.data.remote.ProductDto
 import com.caloriecalc.app.domain.HydrationCalculator
+import com.caloriecalc.app.domain.MicronutrientEstimator
 import kotlinx.coroutines.flow.Flow
 
 class FoodRepository(
