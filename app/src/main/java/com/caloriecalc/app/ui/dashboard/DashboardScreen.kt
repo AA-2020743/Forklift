@@ -304,10 +304,7 @@ fun DashboardScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             items(listOf(250, 500, 1000)) { amountMl ->
-                                OutlinedButton(
-                                    onClick = { viewModel.addWater(amountMl) },
-                                    enabled = state.isToday
-                                ) {
+                                OutlinedButton(onClick = { viewModel.addWater(amountMl) }) {
                                     Icon(
                                         imageVector = Icons.Filled.WaterDrop,
                                         contentDescription = null,
@@ -320,7 +317,7 @@ fun DashboardScreen(
                             item {
                                 IconButton(
                                     onClick = { viewModel.addWater(-250) },
-                                    enabled = state.isToday && state.waterMl > 0
+                                    enabled = state.waterMl > 0
                                 ) {
                                     Icon(Icons.Filled.Remove, contentDescription = "Remove 250ml")
                                 }

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Blender
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Edit
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -92,6 +94,8 @@ fun AddFoodScreen(
     val frequent by viewModel.frequent.collectAsStateWithLifecycle()
     val onlineResults by viewModel.onlineResults.collectAsStateWithLifecycle()
     val isSearchingOnline by viewModel.isSearchingOnline.collectAsStateWithLifecycle()
+    val onlineError by viewModel.onlineError.collectAsStateWithLifecycle()
+    val hasSearchedOnline by viewModel.hasSearchedOnline.collectAsStateWithLifecycle()
     val templates by viewModel.templates.collectAsStateWithLifecycle()
 
     val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
@@ -185,6 +189,8 @@ fun AddFoodScreen(
                     localResults = localResults,
                     onlineResults = onlineResults,
                     isSearchingOnline = isSearchingOnline,
+                    onlineError = onlineError,
+                    hasSearchedOnline = hasSearchedOnline,
                     onSearchOnline = viewModel::searchOnline,
                     onSelect = onSelect,
                     onEditFood = onEditFood
@@ -310,6 +316,8 @@ private fun SearchTabContent(
     localResults: List<FoodItem>,
     onlineResults: List<FoodItem>,
     isSearchingOnline: Boolean,
+    onlineError: String?,
+    hasSearchedOnline: Boolean,
     onSearchOnline: () -> Unit,
     onSelect: (FoodItem) -> Unit,
     onEditFood: (Long) -> Unit
@@ -335,14 +343,56 @@ private fun SearchTabContent(
                 }
             }
         }
-        if (isSearchingOnline) {
-            item {
+        when {
+            isSearchingOnline -> item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
                     CircularProgressIndicator()
                 }
             }
-        } else if (onlineResults.isNotEmpty()) {
-            items(onlineResults, key = { "online_${it.barcode ?: it.name}" }) { FoodRow(it, onSelect, onEditFood) }
+            // A failed search and a search that genuinely matched nothing used to look
+            // identical (both just showed nothing). Say which one happened.
+            onlineError != null -> item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.CloudOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = onlineError,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                text = "You can still add \"$query\" manually with the + button.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
+            onlineResults.isNotEmpty() ->
+                items(onlineResults, key = { "online_${it.barcode ?: it.name}" }) {
+                    FoodRow(it, onSelect, onEditFood)
+                }
+            hasSearchedOnline -> item {
+                Text(
+                    "No products matched \"$query\" on Open Food Facts. It's crowd-sourced, so " +
+                        "coverage varies — adding it manually only takes a moment.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

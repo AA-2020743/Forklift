@@ -11,6 +11,12 @@ import com.caloriecalc.app.domain.HydrationCalculator
 import com.caloriecalc.app.domain.MicronutrientEstimator
 import kotlinx.coroutines.flow.Flow
 
+/** Result of an online search — distinguishes "nothing matched" from "the search itself failed". */
+sealed interface SearchOutcome {
+    data class Success(val foods: List<FoodItem>) : SearchOutcome
+    data class Failure(val message: String) : SearchOutcome
+}
+
 class FoodRepository(
     private val foodDao: FoodDao,
     private val api: OpenFoodFactsApi
@@ -62,12 +68,39 @@ class FoodRepository(
         return variants.toList()
     }
 
-    suspend fun searchOnline(query: String): List<FoodItem> =
-        runCatching { api.searchProducts(query) }
-            .getOrNull()
-            ?.products
-            ?.mapNotNull { it.toFoodItem(FoodSource.SEARCH) }
-            .orEmpty()
+    /**
+     * Searches Open Food Facts by name.
+     *
+     * Tries Search-a-licious first (OFF's current search service) and falls back to the legacy
+     * CGI endpoint, which still answers sometimes but is deprecated and aggressively
+     * rate-limited. Failures are reported rather than swallowed: previously every error —
+     * offline, HTTP 429, a malformed product — collapsed into an empty list, so a broken search
+     * was indistinguishable from a genuine no-match.
+     */
+    suspend fun searchOnline(query: String): SearchOutcome {
+        val modern = runCatching {
+            api.searchProducts(query = query).hits.mapNotNull { it.toFoodItem(FoodSource.SEARCH) }
+        }
+        modern.getOrNull()?.let { if (it.isNotEmpty()) return SearchOutcome.Success(it) }
+
+        val legacy = runCatching {
+            api.searchProductsLegacy(query).products.mapNotNull { it.toFoodItem(FoodSource.SEARCH) }
+        }
+        legacy.getOrNull()?.let { return SearchOutcome.Success(it) }
+
+        val error = legacy.exceptionOrNull() ?: modern.exceptionOrNull()
+        return SearchOutcome.Failure(error.toUserMessage())
+    }
+
+    private fun Throwable?.toUserMessage(): String = when {
+        this == null -> "Search failed for an unknown reason."
+        this is java.net.UnknownHostException -> "No internet connection."
+        this is java.net.SocketTimeoutException -> "Open Food Facts didn't respond in time — try again."
+        this is retrofit2.HttpException && code() == 429 ->
+            "Open Food Facts is rate-limiting requests right now — try again shortly."
+        this is retrofit2.HttpException -> "Open Food Facts returned an error (HTTP ${code()})."
+        else -> message ?: "Search failed."
+    }
 
     /** Persists a food (from an online search result or manual entry) and marks it used. */
     suspend fun saveAndUse(food: FoodItem): FoodItem {
@@ -119,21 +152,27 @@ class FoodRepository(
     suspend fun updateFood(food: FoodItem) = foodDao.update(food)
 }
 
+/**
+ * Requires a name and a calorie figure; a product with neither can't be logged usefully.
+ * Calories fall back to a kilojoule conversion, since kJ is the mandatory figure on EU labels
+ * and plenty of products carry only that — requiring kcal outright was silently discarding a
+ * large share of European search results.
+ */
 private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {
-    val calories = nutriments?.energyKcal100g ?: return null
-    val resolvedName = productName?.takeIf { it.isNotBlank() } ?: "Unnamed product"
+    val calories = nutriments?.resolvedKcal100g ?: return null
+    val resolvedName = productName?.takeIf { it.isNotBlank() } ?: return null
     return FoodItem(
         barcode = code,
         name = resolvedName,
-        brand = brands,
+        brand = brands?.takeIf { it.isNotBlank() },
         waterContentPercent = HydrationCalculator.guessWaterContentPercent(resolvedName),
         caloriesPer100g = calories,
         proteinPer100g = nutriments.proteins100g ?: 0.0,
         fatPer100g = nutriments.fat100g ?: 0.0,
         carbsPer100g = nutriments.carbohydrates100g ?: 0.0,
         micronutrients = nutriments.toMicronutrients(),
-        servingSizeGrams = servingQuantity?.toDoubleOrNull(),
-        servingName = servingSize,
+        servingSizeGrams = servingQuantity?.takeIf { it > 0 },
+        servingName = servingSize?.takeIf { it.isNotBlank() },
         source = source
     )
 }

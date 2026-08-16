@@ -6,6 +6,7 @@ import com.caloriecalc.app.data.local.dao.MealTemplateSummary
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.FoodRepository
 import com.caloriecalc.app.data.repository.MealTemplateRepository
+import com.caloriecalc.app.data.repository.SearchOutcome
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,9 +45,19 @@ class AddFoodViewModel(
     private val _isSearchingOnline = MutableStateFlow(false)
     val isSearchingOnline: StateFlow<Boolean> = _isSearchingOnline.asStateFlow()
 
+    /** Non-null when the last online search failed outright, as opposed to finding nothing. */
+    private val _onlineError = MutableStateFlow<String?>(null)
+    val onlineError: StateFlow<String?> = _onlineError.asStateFlow()
+
+    /** True once a search has completed, so "no results" is only shown after actually looking. */
+    private val _hasSearchedOnline = MutableStateFlow(false)
+    val hasSearchedOnline: StateFlow<Boolean> = _hasSearchedOnline.asStateFlow()
+
     fun onQueryChange(newQuery: String) {
         _query.value = newQuery
         _onlineResults.value = emptyList()
+        _onlineError.value = null
+        _hasSearchedOnline.value = false
     }
 
     fun searchOnline() {
@@ -54,7 +65,18 @@ class AddFoodViewModel(
         if (q.isBlank()) return
         viewModelScope.launch {
             _isSearchingOnline.value = true
-            _onlineResults.value = foodRepository.searchOnline(q)
+            _onlineError.value = null
+            when (val outcome = foodRepository.searchOnline(q)) {
+                is SearchOutcome.Success -> {
+                    _onlineResults.value = outcome.foods
+                    _onlineError.value = null
+                }
+                is SearchOutcome.Failure -> {
+                    _onlineResults.value = emptyList()
+                    _onlineError.value = outcome.message
+                }
+            }
+            _hasSearchedOnline.value = true
             _isSearchingOnline.value = false
         }
     }
