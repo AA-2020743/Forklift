@@ -3,6 +3,7 @@ package com.caloriecalc.app.data.repository
 import com.caloriecalc.app.data.local.dao.MealSlotDao
 import com.caloriecalc.app.data.local.entity.MealSlot
 import com.caloriecalc.app.data.seed.MealSlotSeedData
+import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 
 class MealSlotRepository(
@@ -20,10 +21,26 @@ class MealSlotRepository(
 
     suspend fun getById(id: Long): MealSlot? = dao.getById(id)
 
-    suspend fun addMeal(name: String) {
+    /**
+     * New meals default to the current wall-clock time — you generally add "Second lunch" while
+     * you're eating it — which is immediately adjustable and gives protein-spacing reminders
+     * something to anchor on without an extra setup step.
+     */
+    suspend fun addMeal(name: String, now: LocalTime = LocalTime.now()) {
         val nextOrder = dao.getMaxSortOrder() + 1
-        dao.insert(MealSlot(name = name, sortOrder = nextOrder))
+        dao.insert(
+            MealSlot(
+                name = name,
+                sortOrder = nextOrder,
+                targetHour = now.hour,
+                targetMinute = now.minute
+            )
+        )
     }
+
+    suspend fun setMealTime(id: Long, hour: Int?, minute: Int?) = dao.updateTargetTime(id, hour, minute)
+
+    suspend fun setRemindersEnabled(id: Long, enabled: Boolean) = dao.updateRemindersEnabled(id, enabled)
 
     /** Archives rather than deletes, so historical entries logged under this meal stay intact. */
     suspend fun removeMeal(id: Long) {

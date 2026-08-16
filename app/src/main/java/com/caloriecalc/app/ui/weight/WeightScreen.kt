@@ -81,8 +81,13 @@ fun WeightScreen() {
     val weightSeries = listOf(
         ChartSeries(
             points = state.weightLogs.map { it.epochDay.toFloat() to it.weightKg.toFloat() },
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+            label = "Scale (kg)"
+        ),
+        ChartSeries(
+            points = state.smoothedPoints.map { it.epochDay.toFloat() to it.trendKg.toFloat() },
             color = MaterialTheme.colorScheme.primary,
-            label = "Weight (kg)"
+            label = "Trend (kg)"
         )
     )
     val calorieSeries = listOf(
@@ -108,8 +113,25 @@ fun WeightScreen() {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionHeader(
                             icon = Icons.Filled.MonitorWeight,
-                            title = state.latestWeightKg?.let { "Latest: ${it} kg" } ?: "No weight logged yet"
+                            title = state.trend?.trendWeightKg?.let { "Trend: ${formatKg(it)} kg" }
+                                ?: state.latestWeightKg?.let { "Latest: ${formatKg(it)} kg" }
+                                ?: "No weight logged yet"
                         )
+                        val noise = state.trend?.dailyNoiseKg
+                        if (state.trend?.trendWeightKg != null) {
+                            Text(
+                                text = buildString {
+                                    append(state.latestWeightKg?.let { "Scale today ${formatKg(it)} kg" } ?: "")
+                                    if (noise != null) {
+                                        if (isNotEmpty()) append(" · ")
+                                        append("day-to-day swing ±${formatKg(noise)} kg is mostly water")
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                         Spacer(modifier = Modifier.height(12.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedTextField(
@@ -139,6 +161,13 @@ fun WeightScreen() {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionHeader(Icons.Filled.ShowChart, "Weight trend (28 days)")
+                        Text(
+                            "Faint line is what the scale said; solid line is the smoothed trend " +
+                                "progress is judged by.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         LineChart(series = weightSeries, modifier = Modifier.fillMaxWidth())
                     }
@@ -362,3 +391,6 @@ private fun formatSigned(value: Double): String {
     val rounded = (value * 100).roundToInt() / 100.0
     return if (rounded >= 0) "+$rounded" else "$rounded"
 }
+
+/** One decimal is all a bathroom scale meaningfully resolves. */
+private fun formatKg(value: Double): String = ((value * 10).roundToInt() / 10.0).toString()

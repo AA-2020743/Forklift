@@ -1,11 +1,13 @@
 package com.caloriecalc.app.data.repository
 
+import com.caloriecalc.app.data.local.dao.DayHydration
 import com.caloriecalc.app.data.local.dao.DayMacroTotals
 import com.caloriecalc.app.data.local.dao.DayMacroTotalsWithDay
 import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.dao.MealEntryDao
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.MealEntry
+import com.caloriecalc.app.domain.HydrationCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -27,6 +29,15 @@ class NutritionLogRepository(
     fun totalsInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayMacroTotalsWithDay>> =
         mealEntryDao.getTotalsInRange(fromEpochDay, toEpochDay)
 
+    /** Hydration contributed by food and drink on a day, in mL (separate from logged plain water). */
+    fun hydrationForDay(epochDay: Long): Flow<Double> = mealEntryDao.getHydrationForDay(epochDay)
+
+    fun hydrationInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayHydration>> =
+        mealEntryDao.getHydrationInRange(fromEpochDay, toEpochDay)
+
+    suspend fun lastProteinEntry(minProteinGrams: Double): MealEntry? =
+        mealEntryDao.getLastProteinEntry(minProteinGrams)
+
     suspend fun logFood(food: FoodItem, mealSlotId: Long, epochDay: Long, grams: Double) {
         val factor = grams / 100.0
         val loggedAt = System.currentTimeMillis()
@@ -40,7 +51,8 @@ class NutritionLogRepository(
             protein = food.proteinPer100g * factor,
             fat = food.fatPer100g * factor,
             carbs = food.carbsPer100g * factor,
-            micronutrients = food.micronutrients.scaledBy(factor)
+            micronutrients = food.micronutrients.scaledBy(factor),
+            hydrationMl = HydrationCalculator.hydrationMl(grams, food.waterContentPercent, food.name)
         )
         mealEntryDao.insert(entry)
         foodDao.markUsed(food.id, loggedAt)
@@ -70,7 +82,8 @@ class NutritionLogRepository(
                 protein = food.proteinPer100g * factor,
                 fat = food.fatPer100g * factor,
                 carbs = food.carbsPer100g * factor,
-                micronutrients = food.micronutrients.scaledBy(factor)
+                micronutrients = food.micronutrients.scaledBy(factor),
+                hydrationMl = HydrationCalculator.hydrationMl(grams, food.waterContentPercent, food.name)
             )
         )
     }

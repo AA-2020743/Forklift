@@ -3,6 +3,7 @@ package com.caloriecalc.app
 import android.app.Application
 import com.caloriecalc.app.di.AppContainer
 import com.caloriecalc.app.reminder.NotificationHelper
+import com.caloriecalc.app.reminder.ReminderScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +29,11 @@ class CalorieCalcApp : Application() {
                 appContainer.reminderScheduler.scheduleWeightReminder(
                     profile.weightReminderHour,
                     profile.weightReminderMinute
+                )
+            }
+            if (profile.proteinReminderEnabled) {
+                appContainer.reminderScheduler.scheduleProteinGapCheck(
+                    ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES
                 )
             }
         }

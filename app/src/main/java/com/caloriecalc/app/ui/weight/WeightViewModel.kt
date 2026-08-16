@@ -7,6 +7,8 @@ import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.ProfileRepository
 import com.caloriecalc.app.data.repository.WeightRepository
 import com.caloriecalc.app.domain.NutritionCalculator
+import com.caloriecalc.app.domain.SmoothedWeightPoint
+import com.caloriecalc.app.domain.WeightSmoother
 import com.caloriecalc.app.domain.WeightTrendAnalyzer
 import com.caloriecalc.app.domain.WeightTrendResult
 import java.time.LocalDate
@@ -22,7 +24,9 @@ data class WeightUiState(
     val latestWeightKg: Double? = null,
     val weightLogs: List<WeightLog> = emptyList(),
     val dailyCalories: Map<Long, Double> = emptyMap(),
-    val trend: WeightTrendResult? = null
+    val trend: WeightTrendResult? = null,
+    /** Day-by-day smoothed series backing the trend line drawn over the raw readings. */
+    val smoothedPoints: List<SmoothedWeightPoint> = emptyList()
 )
 
 class WeightViewModel(
@@ -52,7 +56,8 @@ class WeightViewModel(
             latestWeightKg = logs.maxByOrNull { it.epochDay }?.weightKg,
             weightLogs = logs,
             dailyCalories = caloriesByDay,
-            trend = trend
+            trend = trend,
+            smoothedPoints = WeightSmoother.smooth(logs).points
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeightUiState())
 

@@ -7,6 +7,7 @@ import com.caloriecalc.app.data.local.dao.MealTemplateSummary
 import com.caloriecalc.app.data.local.entity.MealEntry
 import com.caloriecalc.app.data.local.entity.MealTemplate
 import com.caloriecalc.app.data.local.entity.MealTemplateItem
+import com.caloriecalc.app.domain.HydrationCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 
@@ -44,7 +45,8 @@ class MealTemplateRepository(
                     protein = food.proteinPer100g * factor,
                     fat = food.fatPer100g * factor,
                     carbs = food.carbsPer100g * factor,
-                    micronutrients = food.micronutrients.scaledBy(factor)
+                    micronutrients = food.micronutrients.scaledBy(factor),
+                    hydrationMl = HydrationCalculator.hydrationMl(item.grams, food.waterContentPercent, food.name)
                 )
             )
             foodDao.markUsed(food.id, loggedAt)

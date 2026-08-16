@@ -39,4 +39,10 @@ interface MealSlotDao {
 
     @Query("UPDATE meal_slots SET isArchived = 0 WHERE id = :id")
     suspend fun unarchive(id: Long)
+
+    @Query("UPDATE meal_slots SET targetHour = :hour, targetMinute = :minute WHERE id = :id")
+    suspend fun updateTargetTime(id: Long, hour: Int?, minute: Int?)
+
+    @Query("UPDATE meal_slots SET remindersEnabled = :enabled WHERE id = :id")
+    suspend fun updateRemindersEnabled(id: Long, enabled: Boolean)
 }

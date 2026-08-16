@@ -63,7 +63,9 @@ fun FoodMacroFields(
     servingGrams: String,
     onServingGramsChange: (String) -> Unit,
     servingName: String,
-    onServingNameChange: (String) -> Unit
+    onServingNameChange: (String) -> Unit,
+    waterContentPercent: String = "",
+    onWaterContentPercentChange: ((String) -> Unit)? = null
 ) {
     Text("Are these values per 100g or per serving?", style = MaterialTheme.typography.bodyMedium)
     Spacer(modifier = Modifier.height(8.dp))
@@ -147,6 +149,18 @@ fun FoodMacroFields(
             value = servingName,
             onValueChange = onServingNameChange,
             label = { Text("Serving name (optional, e.g. \"1 bar\")") },
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    if (onWaterContentPercentChange != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = waterContentPercent,
+            onValueChange = onWaterContentPercentChange,
+            label = { Text("Water content % (optional — counts toward hydration)") },
+            supportingText = { Text("Pre-filled for recognised drinks. Milk ≈ 89, coffee ≈ 99, soup ≈ 92.") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth()
         )
     }

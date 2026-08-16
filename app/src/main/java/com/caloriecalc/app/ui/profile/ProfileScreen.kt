@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.caloriecalc.app.data.local.entity.MealSlot
 import com.caloriecalc.app.data.local.entity.UserProfile
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
@@ -123,6 +124,16 @@ fun ProfileScreen() {
         var reminderHour by remember(loaded) { mutableIntStateOf(loaded.weightReminderHour) }
         var reminderMinute by remember(loaded) { mutableIntStateOf(loaded.weightReminderMinute) }
         var showTimePicker by remember { mutableStateOf(false) }
+        var proteinReminderEnabled by remember(loaded) { mutableStateOf(loaded.proteinReminderEnabled) }
+        var proteinGapText by remember(loaded) { mutableStateOf(loaded.proteinGapHours.toString()) }
+        var proteinDoseText by remember(loaded) { mutableStateOf(loaded.proteinDoseGrams.toString()) }
+        var wakeHour by remember(loaded) { mutableIntStateOf(loaded.wakeHour) }
+        var wakeMinute by remember(loaded) { mutableIntStateOf(loaded.wakeMinute) }
+        var sleepHour by remember(loaded) { mutableIntStateOf(loaded.sleepHour) }
+        var sleepMinute by remember(loaded) { mutableIntStateOf(loaded.sleepMinute) }
+        var showWakePicker by remember { mutableStateOf(false) }
+        var showSleepPicker by remember { mutableStateOf(false) }
+        var mealTimeTarget by remember { mutableStateOf<MealSlot?>(null) }
         var newMealName by remember { mutableStateOf("") }
         var geminiApiKeyText by remember { mutableStateOf(container.apiKeyStore.getGeminiApiKey() ?: "") }
         var geminiKeySaved by remember { mutableStateOf(false) }
@@ -398,6 +409,12 @@ fun ProfileScreen() {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionHeader(Icons.Filled.RestaurantMenu, "Meals")
+                        Text(
+                            "Meal times anchor the protein-spacing nudges below. New meals start " +
+                                "at the time you add them.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         mealSlots.forEach { slot ->
                             Row(
@@ -405,7 +422,10 @@ fun ProfileScreen() {
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     FoodIconBadge(
                                         icon = mealSlotIcon(slot.name),
                                         accentColor = mealSlotAccentColor(slot.name),
@@ -413,6 +433,15 @@ fun ProfileScreen() {
                                     )
                                     Spacer(modifier = Modifier.width(10.dp))
                                     Text(slot.name)
+                                }
+                                TextButton(onClick = { mealTimeTarget = slot }) {
+                                    Text(
+                                        if (slot.hasTargetTime) {
+                                            formatClock(slot.targetHour ?: 0, slot.targetMinute ?: 0)
+                                        } else {
+                                            "Set time"
+                                        }
+                                    )
                                 }
                                 IconButton(onClick = {
                                     scope.launch { container.mealSlotRepository.removeMeal(slot.id) }
@@ -511,6 +540,64 @@ fun ProfileScreen() {
             }
 
             item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        SectionHeader(Icons.Filled.SetMeal, "Protein spacing")
+                        Text(
+                            "Muscle protein synthesis rises after a serving of protein and then " +
+                                "settles back, so several spread-out doses beat one big one. " +
+                                "Nudges never fire while you're asleep.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("Remind me when I go too long")
+                            Switch(checked = proteinReminderEnabled, onCheckedChange = { proteinReminderEnabled = it })
+                        }
+                        if (proteinReminderEnabled) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = proteinGapText,
+                                    onValueChange = { proteinGapText = it },
+                                    label = { Text("Max gap (h)") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = proteinDoseText,
+                                    onValueChange = { proteinDoseText = it },
+                                    label = { Text("Counts as a dose (g)") },
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Awake ${formatClock(wakeHour, wakeMinute)} – ${formatClock(sleepHour, sleepMinute)}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Row {
+                                    TextButton(onClick = { showWakePicker = true }) { Text("Wake") }
+                                    TextButton(onClick = { showSleepPicker = true }) { Text("Sleep") }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 Button(
                     onClick = {
                         val updated = loaded.copy(
@@ -527,7 +614,14 @@ fun ProfileScreen() {
                             manualCalorieTarget = manualCalorieText.toIntOrNull(),
                             weightReminderEnabled = reminderEnabled,
                             weightReminderHour = reminderHour,
-                            weightReminderMinute = reminderMinute
+                            weightReminderMinute = reminderMinute,
+                            proteinReminderEnabled = proteinReminderEnabled,
+                            proteinGapHours = proteinGapText.toIntOrNull()?.coerceIn(1, 12) ?: loaded.proteinGapHours,
+                            proteinDoseGrams = proteinDoseText.toDoubleOrNull()?.coerceAtLeast(1.0) ?: loaded.proteinDoseGrams,
+                            wakeHour = wakeHour,
+                            wakeMinute = wakeMinute,
+                            sleepHour = sleepHour,
+                            sleepMinute = sleepMinute
                         )
                         viewModel.updateProfile(updated)
                         initialProfile = updated
@@ -560,8 +654,70 @@ fun ProfileScreen() {
                 text = { TimePicker(state = timePickerState) }
             )
         }
+
+        if (showWakePicker) {
+            ClockPickerDialog(
+                initialHour = wakeHour,
+                initialMinute = wakeMinute,
+                is24Hour = DateFormat.is24HourFormat(context),
+                onDismiss = { showWakePicker = false },
+                onConfirm = { h, m -> wakeHour = h; wakeMinute = m; showWakePicker = false }
+            )
+        }
+
+        if (showSleepPicker) {
+            ClockPickerDialog(
+                initialHour = sleepHour,
+                initialMinute = sleepMinute,
+                is24Hour = DateFormat.is24HourFormat(context),
+                onDismiss = { showSleepPicker = false },
+                onConfirm = { h, m -> sleepHour = h; sleepMinute = m; showSleepPicker = false }
+            )
+        }
+
+        val slotForTime = mealTimeTarget
+        if (slotForTime != null) {
+            ClockPickerDialog(
+                initialHour = slotForTime.targetHour ?: 12,
+                initialMinute = slotForTime.targetMinute ?: 0,
+                is24Hour = DateFormat.is24HourFormat(context),
+                onDismiss = { mealTimeTarget = null },
+                onConfirm = { h, m ->
+                    scope.launch { container.mealSlotRepository.setMealTime(slotForTime.id, h, m) }
+                    mealTimeTarget = null
+                }
+            )
+        }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ClockPickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    is24Hour: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (hour: Int, minute: Int) -> Unit
+) {
+    val state = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = is24Hour
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        text = { TimePicker(state = state) }
+    )
+}
+
+/** Simple zero-padded 24h clock label, used where a compact fixed-width time reads better. */
+private fun formatClock(hour: Int, minute: Int): String =
+    "%02d:%02d".format(hour, minute)
 
 private fun formatReminderTime(context: android.content.Context, hour: Int, minute: Int): String {
     val calendar = Calendar.getInstance().apply {

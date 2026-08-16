@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.di.rememberAppContainer
+import com.caloriecalc.app.domain.HydrationCalculator
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +50,16 @@ fun ManualFoodEntryScreen(
     var carbs by remember { mutableStateOf("") }
     var servingGrams by remember { mutableStateOf("") }
     var servingName by remember { mutableStateOf("") }
+    var waterContent by remember { mutableStateOf("") }
+    // Pre-fill the water guess from the name as it's typed, but never overwrite a manual edit.
+    var waterContentEdited by remember { mutableStateOf(false) }
+    LaunchedEffect(name) {
+        if (!waterContentEdited) {
+            waterContent = HydrationCalculator.guessWaterContentPercent(name)
+                ?.let { formatMacroValue(it) }
+                .orEmpty()
+        }
+    }
 
     val onBasisChange: (MacroBasis) -> Unit = { newBasis ->
         val grams = servingGrams.toDoubleOrNull()
@@ -98,7 +110,12 @@ fun ManualFoodEntryScreen(
                 servingGrams = servingGrams,
                 onServingGramsChange = { servingGrams = it },
                 servingName = servingName,
-                onServingNameChange = { servingName = it }
+                onServingNameChange = { servingName = it },
+                waterContentPercent = waterContent,
+                onWaterContentPercentChange = {
+                    waterContent = it
+                    waterContentEdited = true
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -114,7 +131,8 @@ fun ManualFoodEntryScreen(
                             fatPer100g = convertMacroBasis(fat.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                             carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                             servingSizeGrams = servingGramsValue,
-                            servingName = servingName.trim().takeIf { it.isNotBlank() }
+                            servingName = servingName.trim().takeIf { it.isNotBlank() },
+                            waterContentPercent = waterContent.toDoubleOrNull()?.coerceIn(0.0, 100.0)
                         )
                         onSaved(food.id, mealSlotId)
                     }

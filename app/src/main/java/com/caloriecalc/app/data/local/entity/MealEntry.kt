@@ -42,5 +42,10 @@ data class MealEntry(
     val fat: Double,
     val carbs: Double,
     /** Absolute micronutrient amounts for the grams actually logged (not per 100g). */
-    @Embedded val micronutrients: Micronutrients = Micronutrients()
+    @Embedded val micronutrients: Micronutrients = Micronutrients(),
+    /**
+     * Effective hydration contributed by this entry, in mL, snapshotted at log time the same
+     * way macros are. Zero for foods with no known water content.
+     */
+    val hydrationMl: Double = 0.0
 )

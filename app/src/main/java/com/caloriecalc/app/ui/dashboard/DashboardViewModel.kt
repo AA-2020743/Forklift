@@ -56,15 +56,20 @@ data class DashboardUiState(
     val activityRows: List<ActivityRow> = emptyList(),
     val totalCaloriesBurned: Int = 0,
     val waterMl: Int = 0,
+    /** Hydration from logged food and drink, counted separately from poured water. */
+    val hydrationFromFoodMl: Int = 0,
     val waterTargetMl: Int = 2000
-)
+) {
+    val totalHydrationMl: Int get() = waterMl + hydrationFromFoodMl
+}
 
 private data class DayScopedBundle(
     val sessions: List<WorkoutSession>,
     val activities: List<ActivityLog>,
     val water: WaterLog?,
     val totals: DayMacroTotals,
-    val entries: List<MealEntryWithFood>
+    val entries: List<MealEntryWithFood>,
+    val hydrationFromFoodMl: Double
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -81,14 +86,21 @@ class DashboardViewModel(
     private val selectedEpochDay = MutableStateFlow(today)
 
     private val dayScoped = selectedEpochDay.flatMapLatest { day ->
+        // Water and food-derived hydration are paired first: `combine` tops out at five typed
+        // sources, and these two are the pair that always get read together anyway.
+        val hydration = combine(
+            waterRepository.observeForDay(day),
+            nutritionLogRepository.hydrationForDay(day)
+        ) { water, fromFood -> water to fromFood }
+
         combine(
             workoutRepository.observeSessionsInRange(day, day),
             activityRepository.observeForDay(day),
-            waterRepository.observeForDay(day),
+            hydration,
             nutritionLogRepository.totalsForDay(day),
             nutritionLogRepository.entriesForDay(day)
-        ) { sessions, activities, water, totals, entries ->
-            DayScopedBundle(sessions, activities, water, totals, entries)
+        ) { sessions, activities, (water, fromFood), totals, entries ->
+            DayScopedBundle(sessions, activities, water, totals, entries, fromFood)
         }
     }
 
@@ -98,7 +110,7 @@ class DashboardViewModel(
         dayScoped,
         selectedEpochDay
     ) { profile, mealSlots, bundle, day ->
-        val (sessions, activities, water, totals, entries) = bundle
+        val (sessions, activities, water, totals, entries, hydrationFromFood) = bundle
         val targets = NutritionCalculator.computeTargets(profile)
         val mealSummaries = mealSlots.map { slot ->
             val mealEntries = entries.filter { it.entry.mealSlotId == slot.id }
@@ -142,6 +154,7 @@ class DashboardViewModel(
             activityRows = activityRows,
             totalCaloriesBurned = totalBurned,
             waterMl = water?.amountMl ?: 0,
+            hydrationFromFoodMl = hydrationFromFood.roundToInt(),
             waterTargetMl = WaterCalculator.recommendedMl(profile)
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())

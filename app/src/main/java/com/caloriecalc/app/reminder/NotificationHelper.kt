@@ -16,8 +16,10 @@ import com.caloriecalc.app.MainActivity
 object NotificationHelper {
 
     const val WEIGHT_REMINDER_CHANNEL_ID = "weight_reminder"
+    const val PROTEIN_REMINDER_CHANNEL_ID = "protein_reminder"
     private const val WEIGHT_REMINDER_NOTIFICATION_ID = 1001
     private const val WEIGHT_FOLLOW_UP_NOTIFICATION_ID = 1002
+    private const val PROTEIN_GAP_NOTIFICATION_ID = 1003
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -28,8 +30,38 @@ object NotificationHelper {
             ).apply {
                 description = "Daily reminder to log your body weight"
             }
-            context.getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+            val proteinChannel = NotificationChannel(
+                PROTEIN_REMINDER_CHANNEL_ID,
+                "Protein spacing",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Nudges when it's been a while since your last serving of protein"
+            }
+            context.getSystemService(NotificationManager::class.java)?.apply {
+                createNotificationChannel(channel)
+                createNotificationChannel(proteinChannel)
+            }
         }
+    }
+
+    /**
+     * Fired when the gap since the last meaningful dose of protein exceeds the user's configured
+     * limit. Copy names the actual gap and the meal it's nearest to, so it reads as information
+     * rather than nagging.
+     */
+    fun showProteinGapReminder(context: Context, hoursSinceLastProtein: Int, nextMealName: String?) {
+        val body = buildString {
+            append("It's been about ${hoursSinceLastProtein}h since your last solid hit of protein.")
+            if (nextMealName != null) append(" $nextMealName is around now — good moment to top up.")
+        }
+        notifyWeight(
+            context = context,
+            notificationId = PROTEIN_GAP_NOTIFICATION_ID,
+            title = "Protein gap",
+            body = body,
+            priority = NotificationCompat.PRIORITY_DEFAULT,
+            channelId = PROTEIN_REMINDER_CHANNEL_ID
+        )
     }
 
     fun showWeightReminder(context: Context) {
@@ -59,7 +91,8 @@ object NotificationHelper {
         notificationId: Int,
         title: String,
         body: String,
-        priority: Int
+        priority: Int,
+        channelId: String = WEIGHT_REMINDER_CHANNEL_ID
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
@@ -77,7 +110,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, WEIGHT_REMINDER_CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(title)
             .setContentText(body)

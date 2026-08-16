@@ -63,11 +63,36 @@ class ReminderScheduler(private val context: Context) {
         }
     }
 
+    /**
+     * Queues the next protein-spacing check. Like the weight reminder this is a self-chaining
+     * one-time job rather than periodic work, so ProteinGapWorker can vary the next delay —
+     * normally hourly, but jumping straight to wake-up time when it runs during sleep.
+     */
+    fun scheduleProteinGapCheck(delayMinutes: Long) {
+        val request = OneTimeWorkRequestBuilder<ProteinGapWorker>()
+            .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            PROTEIN_WORK_NAME,
+            ExistingWorkPolicy.REPLACE,
+            request
+        )
+    }
+
+    fun cancelProteinGapCheck() {
+        WorkManager.getInstance(context).cancelUniqueWork(PROTEIN_WORK_NAME)
+    }
+
     companion object {
         private const val WORK_NAME = "weight_reminder_work"
         private const val FOLLOW_UP_WORK_NAME = "weight_reminder_follow_up_work"
+        private const val PROTEIN_WORK_NAME = "protein_gap_work"
 
         /** How long after the configured reminder time to nudge again if nothing was logged. */
         const val FOLLOW_UP_DELAY_MINUTES = 210L
+
+        /** How often to re-evaluate the protein gap while awake. */
+        const val PROTEIN_CHECK_INTERVAL_MINUTES = 60L
     }
 }

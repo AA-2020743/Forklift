@@ -43,7 +43,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -230,31 +229,56 @@ fun DashboardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            SectionHeader(Icons.Filled.WaterDrop, "Water")
+                            SectionHeader(Icons.Filled.WaterDrop, "Hydration")
                             Text(
-                                "${state.waterMl} / ${state.waterTargetMl} ml",
+                                "${state.totalHydrationMl} / ${state.waterTargetMl} ml",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Spacer(modifier = Modifier.height(10.dp))
-                        val waterFraction = if (state.waterTargetMl <= 0) 0f
-                        else (state.waterMl.toFloat() / state.waterTargetMl)
-                        val waterColor = when {
-                            state.waterMl >= state.waterTargetMl -> StatusOnTarget
-                            waterFraction >= 0.5f -> StatusApproaching
+                        val target = state.waterTargetMl.coerceAtLeast(1)
+                        val totalFraction = (state.totalHydrationMl.toFloat() / target).coerceIn(0f, 1f)
+                        val pouredFraction = (state.waterMl.toFloat() / target).coerceIn(0f, totalFraction)
+                        val hydrationColor = when {
+                            state.totalHydrationMl >= state.waterTargetMl -> StatusOnTarget
+                            totalFraction >= 0.5f -> StatusApproaching
                             else -> StatusBelowThreshold
                         }
-                        LinearProgressIndicator(
-                            progress = waterFraction.coerceIn(0f, 1f),
+                        // Two segments in one bar: solid for water you drank, translucent for
+                        // what came from food and other drinks, so the split stays legible at
+                        // a glance without needing two separate bars.
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(10.dp)
-                                .clip(RoundedCornerShape(5.dp)),
-                            color = waterColor,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                                .clip(RoundedCornerShape(5.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(totalFraction)
+                                    .height(10.dp)
+                                    .background(hydrationColor.copy(alpha = 0.4f))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(pouredFraction)
+                                    .height(10.dp)
+                                    .background(hydrationColor)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = if (state.hydrationFromFoodMl > 0) {
+                                "${state.waterMl} ml drunk · ${state.hydrationFromFoodMl} ml from food & drinks"
+                            } else {
+                                "${state.waterMl} ml drunk — logged drinks and watery foods count too"
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         LazyRow(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),

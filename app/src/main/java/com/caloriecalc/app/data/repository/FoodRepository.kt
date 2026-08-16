@@ -7,6 +7,7 @@ import com.caloriecalc.app.data.local.entity.Micronutrients
 import com.caloriecalc.app.data.remote.NutrimentsDto
 import com.caloriecalc.app.data.remote.OpenFoodFactsApi
 import com.caloriecalc.app.data.remote.ProductDto
+import com.caloriecalc.app.domain.HydrationCalculator
 import kotlinx.coroutines.flow.Flow
 
 class FoodRepository(
@@ -86,7 +87,9 @@ class FoodRepository(
         carbsPer100g: Double,
         servingSizeGrams: Double?,
         servingName: String?,
-        micronutrients: Micronutrients = Micronutrients()
+        micronutrients: Micronutrients = Micronutrients(),
+        /** Null falls back to a keyword guess from the name, so drinks hydrate without extra typing. */
+        waterContentPercent: Double? = null
     ): FoodItem {
         val food = FoodItem(
             name = name,
@@ -96,6 +99,7 @@ class FoodRepository(
             fatPer100g = fatPer100g,
             carbsPer100g = carbsPer100g,
             micronutrients = micronutrients,
+            waterContentPercent = waterContentPercent ?: HydrationCalculator.guessWaterContentPercent(name),
             servingSizeGrams = servingSizeGrams,
             servingName = servingName,
             source = FoodSource.MANUAL
@@ -109,10 +113,12 @@ class FoodRepository(
 
 private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {
     val calories = nutriments?.energyKcal100g ?: return null
+    val resolvedName = productName?.takeIf { it.isNotBlank() } ?: "Unnamed product"
     return FoodItem(
         barcode = code,
-        name = productName?.takeIf { it.isNotBlank() } ?: "Unnamed product",
+        name = resolvedName,
         brand = brands,
+        waterContentPercent = HydrationCalculator.guessWaterContentPercent(resolvedName),
         caloriesPer100g = calories,
         proteinPer100g = nutriments.proteins100g ?: 0.0,
         fatPer100g = nutriments.fat100g ?: 0.0,

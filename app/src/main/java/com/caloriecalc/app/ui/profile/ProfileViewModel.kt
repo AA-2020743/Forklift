@@ -35,6 +35,11 @@ class ProfileViewModel(
             } else {
                 reminderScheduler.cancelWeightReminder()
             }
+            if (profile.proteinReminderEnabled) {
+                reminderScheduler.scheduleProteinGapCheck(ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES)
+            } else {
+                reminderScheduler.cancelProteinGapCheck()
+            }
         }
     }
 }

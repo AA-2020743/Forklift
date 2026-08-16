@@ -38,7 +38,26 @@ data class UserProfile(
     val manualCalorieTarget: Int? = null,
     val weightReminderEnabled: Boolean = true,
     val weightReminderHour: Int = 8,
-    val weightReminderMinute: Int = 0
+    val weightReminderMinute: Int = 0,
+    /**
+     * Protein-spacing reminders: muscle protein synthesis responds to a dose of protein and
+     * then falls back toward baseline, so research on distribution generally favours spreading
+     * intake across the day rather than one large hit. [proteinGapHours] is how long a gap is
+     * allowed before a nudge; [proteinDoseGrams] is the minimum amount that counts as "fed",
+     * so a black coffee or an apple doesn't reset the clock.
+     */
+    val proteinReminderEnabled: Boolean = true,
+    val proteinGapHours: Int = 4,
+    val proteinDoseGrams: Double = 15.0,
+    /**
+     * Waking window, used to hold every reminder until you're actually up. Stored as
+     * wake/sleep wall-clock times and compared with wrap-around, so a sleep time past midnight
+     * behaves correctly.
+     */
+    val wakeHour: Int = 7,
+    val wakeMinute: Int = 0,
+    val sleepHour: Int = 23,
+    val sleepMinute: Int = 0
 ) {
     companion object {
         const val SINGLETON_ID = 1

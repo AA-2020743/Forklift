@@ -68,6 +68,28 @@ interface MealEntryDao {
     )
     fun getTotalsForDay(epochDay: Long): Flow<DayMacroTotals>
 
+    /** Total hydration contributed by food and drink logged on a day, in mL. */
+    @Query("SELECT COALESCE(SUM(hydrationMl), 0) FROM meal_entries WHERE epochDay = :epochDay")
+    fun getHydrationForDay(epochDay: Long): Flow<Double>
+
+    @Query(
+        """
+        SELECT epochDay, COALESCE(SUM(hydrationMl), 0) AS hydrationMl
+        FROM meal_entries WHERE epochDay BETWEEN :fromEpochDay AND :toEpochDay
+        GROUP BY epochDay
+        """
+    )
+    fun getHydrationInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayHydration>>
+
+    /** The most recent entry that delivered at least [minProteinGrams] of protein. */
+    @Query(
+        """
+        SELECT * FROM meal_entries WHERE protein >= :minProteinGrams
+        ORDER BY loggedAtEpochMillis DESC LIMIT 1
+        """
+    )
+    suspend fun getLastProteinEntry(minProteinGrams: Double): MealEntry?
+
     @Query(
         """
         SELECT epochDay, COALESCE(SUM(calories), 0) AS calories,
@@ -88,3 +110,5 @@ data class DayMacroTotalsWithDay(
     val fat: Double,
     val carbs: Double
 )
+
+data class DayHydration(val epochDay: Long, val hydrationMl: Double)

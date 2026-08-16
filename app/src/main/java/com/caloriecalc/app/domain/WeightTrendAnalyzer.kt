@@ -11,7 +11,11 @@ data class WeightTrendResult(
     val estimatedMaintenanceCalories: Int?,
     val suggestion: String,
     /** A concrete kcal/day delta to apply to the calorie target, if the trend suggests one. */
-    val suggestedCalorieAdjustment: Int? = null
+    val suggestedCalorieAdjustment: Int? = null,
+    /** Smoothed "trend weight" — what to judge progress by instead of today's scale reading. */
+    val trendWeightKg: Double? = null,
+    /** Typical daily swing around the trend, i.e. how much of the scale is just water. */
+    val dailyNoiseKg: Double? = null
 )
 
 private data class Suggestion(val text: String, val adjustmentKcal: Int? = null)
@@ -36,22 +40,27 @@ object WeightTrendAnalyzer {
         goal: Goal,
         currentBodyWeightKg: Double
     ): WeightTrendResult {
-        if (weightLogsInWindow.size < 2) {
+        // Judge progress by the smoothed trend, never by two raw readings — day-to-day scale
+        // noise (water, sodium, glycogen, gut contents) routinely exceeds a week of real change.
+        val series = WeightSmoother.smooth(weightLogsInWindow)
+        val weeklyChangeKg = series.weeklyChangeKg
+
+        if (weightLogsInWindow.size < 2 || weeklyChangeKg == null) {
             return WeightTrendResult(
                 weeklyChangeKg = null,
                 averageDailyCalories = null,
                 estimatedMaintenanceCalories = null,
-                suggestion = "Log your weight a few more times this week to unlock trend insights."
+                suggestion = "Log your weight a few more times this week to unlock trend insights.",
+                trendWeightKg = series.latestTrendKg,
+                dailyNoiseKg = series.dailyNoiseKg
             )
         }
 
         val sorted = weightLogsInWindow.sortedBy { it.epochDay }
-        val first = sorted.first()
-        val last = sorted.last()
-        val daySpan = (last.epochDay - first.epochDay).coerceAtLeast(1)
-        val weeklyChangeKg = (last.weightKg - first.weightKg) / daySpan * 7.0
+        val firstDay = sorted.first().epochDay
+        val lastDay = sorted.last().epochDay
 
-        val relevantCalories = (first.epochDay..last.epochDay).mapNotNull { dailyCaloriesByEpochDay[it] }
+        val relevantCalories = (firstDay..lastDay).mapNotNull { dailyCaloriesByEpochDay[it] }
         val averageDailyCalories = if (relevantCalories.isNotEmpty()) relevantCalories.average() else null
 
         val estimatedMaintenance = averageDailyCalories?.let { avg ->
@@ -67,7 +76,9 @@ object WeightTrendAnalyzer {
             averageDailyCalories,
             estimatedMaintenance,
             suggestion.text,
-            suggestion.adjustmentKcal
+            suggestion.adjustmentKcal,
+            trendWeightKg = series.latestTrendKg,
+            dailyNoiseKg = series.dailyNoiseKg
         )
     }
 

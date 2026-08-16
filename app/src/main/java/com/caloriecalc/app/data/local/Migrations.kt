@@ -227,6 +227,42 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+/**
+ * v7 -> v8: hydration from food/drink, meal target times, and protein-spacing/sleep settings.
+ * All additive. Existing meal slots get sensible default times by name so protein-gap reminders
+ * work immediately rather than waiting for the user to set each one; unrecognised names stay
+ * null (= no set time, no reminder) instead of being given a made-up one.
+ */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE food_items ADD COLUMN `waterContentPercent` REAL")
+        db.execSQL("ALTER TABLE meal_entries ADD COLUMN `hydrationMl` REAL NOT NULL DEFAULT 0")
+
+        db.execSQL("ALTER TABLE meal_slots ADD COLUMN `targetHour` INTEGER")
+        db.execSQL("ALTER TABLE meal_slots ADD COLUMN `targetMinute` INTEGER")
+        db.execSQL("ALTER TABLE meal_slots ADD COLUMN `remindersEnabled` INTEGER NOT NULL DEFAULT 1")
+        val defaultTimes = mapOf(
+            "Breakfast" to 8,
+            "Pre-workout" to 11,
+            "Lunch" to 13,
+            "Post-workout" to 16,
+            "Dinner" to 19,
+            "Snack" to 21
+        )
+        defaultTimes.forEach { (name, hour) ->
+            db.execSQL("UPDATE meal_slots SET targetHour = $hour, targetMinute = 0 WHERE name = '$name'")
+        }
+
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `proteinReminderEnabled` INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `proteinGapHours` INTEGER NOT NULL DEFAULT 4")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `proteinDoseGrams` REAL NOT NULL DEFAULT 15.0")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `wakeHour` INTEGER NOT NULL DEFAULT 7")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `wakeMinute` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `sleepHour` INTEGER NOT NULL DEFAULT 23")
+        db.execSQL("ALTER TABLE user_profile ADD COLUMN `sleepMinute` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
-    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7
+    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8
 )

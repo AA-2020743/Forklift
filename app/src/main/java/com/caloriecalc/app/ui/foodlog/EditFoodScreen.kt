@@ -83,6 +83,9 @@ fun EditFoodScreen(
     var carbs by remember(food) { mutableStateOf(formatMacroValue(food.carbsPer100g)) }
     var servingGrams by remember(food) { mutableStateOf(food.servingSizeGrams?.let { formatMacroValue(it) } ?: "") }
     var servingName by remember(food) { mutableStateOf(food.servingName ?: "") }
+    var waterContent by remember(food) {
+        mutableStateOf(food.waterContentPercent?.let { formatMacroValue(it) } ?: "")
+    }
 
     val onBasisChange: (MacroBasis) -> Unit = { newBasis ->
         val grams = servingGrams.toDoubleOrNull()
@@ -141,7 +144,9 @@ fun EditFoodScreen(
                 servingGrams = servingGrams,
                 onServingGramsChange = { servingGrams = it },
                 servingName = servingName,
-                onServingNameChange = { servingName = it }
+                onServingNameChange = { servingName = it },
+                waterContentPercent = waterContent,
+                onWaterContentPercentChange = { waterContent = it }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -158,7 +163,8 @@ fun EditFoodScreen(
                                 fatPer100g = convertMacroBasis(fat.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                                 carbsPer100g = convertMacroBasis(carbs.toDoubleOrNull() ?: 0.0, basis, MacroBasis.PER_100G, servingGramsValue),
                                 servingSizeGrams = servingGramsValue,
-                                servingName = servingName.trim().takeIf { it.isNotBlank() }
+                                servingName = servingName.trim().takeIf { it.isNotBlank() },
+                                waterContentPercent = waterContent.toDoubleOrNull()?.coerceIn(0.0, 100.0)
                             )
                         )
                         onSaved()

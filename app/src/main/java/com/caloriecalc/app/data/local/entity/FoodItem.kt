@@ -22,6 +22,12 @@ data class FoodItem(
     val carbsPer100g: Double,
     /** Per-100g micronutrients, when known. */
     @Embedded val micronutrients: Micronutrients = Micronutrients(),
+    /**
+     * Percent of this food's weight that is water, when known — lets drinks and watery foods
+     * count toward daily hydration. Null means "unknown, contributes nothing"; see
+     * [com.caloriecalc.app.domain.HydrationCalculator].
+     */
+    val waterContentPercent: Double? = null,
     /** Grams represented by one "serving", if the product defines one (e.g. from Open Food Facts). */
     val servingSizeGrams: Double? = null,
     val servingName: String? = null,
