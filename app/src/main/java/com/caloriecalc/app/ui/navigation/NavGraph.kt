@@ -83,7 +83,9 @@ fun AppNavHost() {
                         navController.navigate(Screen.MealLog.createRoute(mealSlotId, epochDay))
                     },
                     onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) },
-                    onQuickAdd = { navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID)) },
+                    onQuickAdd = {
+                        navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID, LocalDate.now().toEpochDay()))
+                    },
                     onOpenTrends = { navController.navigate(Screen.WeeklySummary.route) }
                 )
             }
@@ -153,43 +155,49 @@ fun AppNavHost() {
                     mealSlotId = mealSlotId,
                     epochDay = epochDay,
                     onBack = { navController.popBackStack() },
-                    onAddFood = { navController.navigate(Screen.AddFood.createRoute(it)) }
+                    onAddFood = { mid, day -> navController.navigate(Screen.AddFood.createRoute(mid, day)) }
                 )
             }
 
             composable(
                 route = Screen.AddFood.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 AddFoodScreen(
                     mealSlotId = mealSlotId,
+                    epochDay = epochDay,
                     onBack = { navController.popBackStack() },
-                    onScanBarcode = { navController.navigate(Screen.BarcodeScan.createRoute(it)) },
-                    onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
-                    onPhotoEstimate = { navController.navigate(Screen.PhotoEstimate.createRoute(it)) },
-                    onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) },
+                    onScanBarcode = { navController.navigate(Screen.BarcodeScan.createRoute(it, epochDay)) },
+                    onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it, epochDay)) },
+                    onPhotoEstimate = { navController.navigate(Screen.PhotoEstimate.createRoute(it, epochDay)) },
+                    onFoodSelected = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) },
                     onQuickAdded = { mid ->
-                        navController.popBackStack(
-                            Screen.MealLog.createRoute(mid, LocalDate.now().toEpochDay()),
-                            false
-                        )
+                        navController.popBackStack(Screen.MealLog.createRoute(mid, epochDay), false)
                     },
                     onEditFood = { foodId -> navController.navigate(Screen.EditFood.createRoute(foodId)) },
-                    onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it)) },
-                    onCreateRecipe = { navController.navigate(Screen.RecipeBuilder.createRoute(it)) }
+                    onCreateProteinShake = { navController.navigate(Screen.ProteinShake.createRoute(it, epochDay)) },
+                    onCreateRecipe = { navController.navigate(Screen.RecipeBuilder.createRoute(it, epochDay)) }
                 )
             }
 
             composable(
                 route = Screen.RecipeBuilder.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 RecipeBuilderScreen(
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) }
                 )
             }
 
@@ -207,56 +215,70 @@ fun AppNavHost() {
 
             composable(
                 route = Screen.ProteinShake.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 ProteinShakeScreen(
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) }
                 )
             }
 
             composable(
                 route = Screen.PhotoEstimate.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 PhotoEstimateScreen(
                     mealSlotId = mealSlotId,
+                    epochDay = epochDay,
                     onBack = { navController.popBackStack() },
                     onLogged = {
-                        navController.popBackStack(
-                            Screen.MealLog.createRoute(mealSlotId, LocalDate.now().toEpochDay()),
-                            false
-                        )
+                        navController.popBackStack(Screen.MealLog.createRoute(mealSlotId, epochDay), false)
                     }
                 )
             }
 
             composable(
                 route = Screen.BarcodeScan.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 BarcodeScanScreen(
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it)) },
+                    onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it, epochDay)) },
                     onSearchByName = { navController.popBackStack() },
-                    onFoodResolved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
+                    onFoodResolved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) }
                 )
             }
 
             composable(
                 route = Screen.ManualFoodEntry.route,
-                arguments = listOf(navArgument("mealSlotId") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
+                )
             ) { entry ->
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 ManualFoodEntryScreen(
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
-                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid)) }
+                    onSaved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) }
                 )
             }
 
@@ -264,23 +286,23 @@ fun AppNavHost() {
                 route = Screen.Quantity.route,
                 arguments = listOf(
                     navArgument("foodId") { type = NavType.LongType },
-                    navArgument("mealSlotId") { type = NavType.LongType }
+                    navArgument("mealSlotId") { type = NavType.LongType },
+                    navArgument("epochDay") { type = NavType.LongType }
                 )
             ) { entry ->
                 val foodId = entry.arguments?.getLong("foodId") ?: 0L
                 val mealSlotId = entry.arguments?.getLong("mealSlotId") ?: 0L
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
                 QuantityScreen(
                     foodId = foodId,
                     mealSlotId = mealSlotId,
+                    epochDay = epochDay,
                     onBack = { navController.popBackStack() },
                     onLogged = {
                         if (mealSlotId == QUICK_ADD_MEAL_SLOT_ID) {
                             navController.popBackStack(Screen.Dashboard.route, false)
                         } else {
-                            navController.popBackStack(
-                                Screen.MealLog.createRoute(mealSlotId, LocalDate.now().toEpochDay()),
-                                false
-                            )
+                            navController.popBackStack(Screen.MealLog.createRoute(mealSlotId, epochDay), false)
                         }
                     }
                 )

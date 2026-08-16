@@ -9,7 +9,6 @@ import com.caloriecalc.app.data.repository.FoodRepository
 import com.caloriecalc.app.data.repository.NutritionLogRepository
 import com.caloriecalc.app.data.repository.PhotoEstimationRepository
 import com.caloriecalc.app.data.repository.toFoodItem
-import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,6 +41,7 @@ data class PhotoEstimateUiState(
 
 class PhotoEstimateViewModel(
     private val mealSlotId: Long,
+    private val epochDay: Long,
     private val photoEstimationRepository: PhotoEstimationRepository,
     private val foodRepository: FoodRepository,
     private val nutritionLogRepository: NutritionLogRepository
@@ -83,10 +83,9 @@ class PhotoEstimateViewModel(
 
     fun logAll(onDone: () -> Unit) {
         viewModelScope.launch {
-            val today = LocalDate.now().toEpochDay()
             _uiState.value.items.forEach { editable ->
                 val saved = foodRepository.saveAndUse(editable.toFoodItem())
-                nutritionLogRepository.logFood(saved, mealSlotId, today, editable.grams)
+                nutritionLogRepository.logFood(saved, mealSlotId, epochDay, editable.grams)
             }
             onDone()
         }

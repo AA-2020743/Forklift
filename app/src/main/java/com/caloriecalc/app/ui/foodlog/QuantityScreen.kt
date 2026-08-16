@@ -45,7 +45,6 @@ import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
 import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
-import java.time.LocalDate
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -56,6 +55,7 @@ private enum class QuantityMode { GRAMS, SERVINGS }
 fun QuantityScreen(
     foodId: Long,
     mealSlotId: Long,
+    epochDay: Long,
     onBack: () -> Unit,
     onLogged: () -> Unit
 ) {
@@ -202,8 +202,7 @@ fun QuantityScreen(
                 onClick = {
                     val target = targetMealSlotId ?: return@Button
                     scope.launch {
-                        val today = LocalDate.now().toEpochDay()
-                        container.nutritionLogRepository.logFood(currentFood, target, today, grams.coerceAtLeast(0.0))
+                        container.nutritionLogRepository.logFood(currentFood, target, epochDay, grams.coerceAtLeast(0.0))
                         onLogged()
                     }
                 },

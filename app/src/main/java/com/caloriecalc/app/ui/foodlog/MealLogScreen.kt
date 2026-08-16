@@ -65,7 +65,7 @@ fun MealLogScreen(
     mealSlotId: Long,
     epochDay: Long,
     onBack: () -> Unit,
-    onAddFood: (Long) -> Unit
+    onAddFood: (mealSlotId: Long, epochDay: Long) -> Unit
 ) {
     val container = rememberAppContainer()
     val viewModel: MealLogViewModel = viewModel(
@@ -118,7 +118,7 @@ fun MealLogScreen(
                     }
                 },
                 actions = {
-                    if (isToday && entries.isNotEmpty()) {
+                    if (entries.isNotEmpty()) {
                         IconButton(onClick = { showSaveTemplateDialog = true }) {
                             Icon(Icons.Filled.BookmarkAdd, contentDescription = "Save as template")
                         }
@@ -127,10 +127,8 @@ fun MealLogScreen(
             )
         },
         floatingActionButton = {
-            if (isToday) {
-                FloatingActionButton(onClick = { onAddFood(mealSlotId) }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Add food")
-                }
+            FloatingActionButton(onClick = { onAddFood(mealSlotId, epochDay) }) {
+                Icon(Icons.Filled.Add, contentDescription = "Add food")
             }
         }
     ) { padding ->
@@ -147,12 +145,12 @@ fun MealLogScreen(
                     if (isToday) "Nothing logged yet for ${mealName.lowercase()}."
                     else "Nothing was logged for ${mealName.lowercase()} on this day."
                 )
-                if (isToday && yesterdayEntries.isNotEmpty()) {
+                if (yesterdayEntries.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(onClick = { viewModel.repeatYesterday() }) {
+                    OutlinedButton(onClick = { viewModel.repeatPreviousDay() }) {
                         Icon(Icons.Filled.Replay, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Repeat yesterday (${yesterdayEntries.size} item${if (yesterdayEntries.size == 1) "" else "s"})")
+                        Text("Repeat previous day (${yesterdayEntries.size} item${if (yesterdayEntries.size == 1) "" else "s"})")
                     }
                 }
             }
@@ -196,14 +194,12 @@ fun MealLogScreen(
                                     )
                                 }
                             }
-                            if (isToday) {
-                                Row {
-                                    IconButton(onClick = { editingEntry = item }) {
-                                        Icon(Icons.Filled.Edit, contentDescription = "Edit ${item.food.name}")
-                                    }
-                                    IconButton(onClick = { viewModel.deleteEntry(item) }) {
-                                        Icon(Icons.Filled.Delete, contentDescription = "Remove")
-                                    }
+                            Row {
+                                IconButton(onClick = { editingEntry = item }) {
+                                    Icon(Icons.Filled.Edit, contentDescription = "Edit ${item.food.name}")
+                                }
+                                IconButton(onClick = { viewModel.deleteEntry(item) }) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "Remove")
                                 }
                             }
                         }

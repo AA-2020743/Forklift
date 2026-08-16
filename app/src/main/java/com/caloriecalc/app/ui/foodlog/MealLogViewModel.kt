@@ -32,8 +32,7 @@ class MealLogViewModel(
         nutritionLogRepository.entriesForMeal(epochDay, mealSlotId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** Only meaningful when [isToday] — powers the "Repeat yesterday" quick action. Harmless
-     * (just an extra query) to compute when viewing a past day, where it's simply unused. */
+    /** The day before whichever day is being viewed — powers "Repeat previous day". */
     val yesterdayEntries: StateFlow<List<MealEntryWithFood>> =
         nutritionLogRepository.entriesForMeal(epochDay - 1, mealSlotId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -56,8 +55,7 @@ class MealLogViewModel(
         }
     }
 
-    fun repeatYesterday() {
-        if (!isToday) return
+    fun repeatPreviousDay() {
         viewModelScope.launch {
             nutritionLogRepository.repeatMeal(epochDay - 1, epochDay, mealSlotId)
         }

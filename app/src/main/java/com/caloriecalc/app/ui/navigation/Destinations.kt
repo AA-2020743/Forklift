@@ -22,36 +22,36 @@ sealed class Screen(val route: String) {
         fun createRoute(mealSlotId: Long, epochDay: Long) = "meal_log/$mealSlotId/$epochDay"
     }
 
-    data object AddFood : Screen("add_food/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "add_food/$mealSlotId"
+    data object AddFood : Screen("add_food/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "add_food/$mealSlotId/$epochDay"
     }
 
-    data object BarcodeScan : Screen("barcode_scan/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "barcode_scan/$mealSlotId"
+    data object BarcodeScan : Screen("barcode_scan/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "barcode_scan/$mealSlotId/$epochDay"
     }
 
-    data object ManualFoodEntry : Screen("manual_food_entry/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "manual_food_entry/$mealSlotId"
+    data object ManualFoodEntry : Screen("manual_food_entry/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "manual_food_entry/$mealSlotId/$epochDay"
     }
 
-    data object PhotoEstimate : Screen("photo_estimate/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "photo_estimate/$mealSlotId"
+    data object PhotoEstimate : Screen("photo_estimate/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "photo_estimate/$mealSlotId/$epochDay"
     }
 
-    data object Quantity : Screen("quantity/{foodId}/{mealSlotId}") {
-        fun createRoute(foodId: Long, mealSlotId: Long) = "quantity/$foodId/$mealSlotId"
+    data object Quantity : Screen("quantity/{foodId}/{mealSlotId}/{epochDay}") {
+        fun createRoute(foodId: Long, mealSlotId: Long, epochDay: Long) = "quantity/$foodId/$mealSlotId/$epochDay"
     }
 
     data object EditFood : Screen("edit_food/{foodId}") {
         fun createRoute(foodId: Long) = "edit_food/$foodId"
     }
 
-    data object ProteinShake : Screen("protein_shake/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "protein_shake/$mealSlotId"
+    data object ProteinShake : Screen("protein_shake/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "protein_shake/$mealSlotId/$epochDay"
     }
 
-    data object RecipeBuilder : Screen("recipe_builder/{mealSlotId}") {
-        fun createRoute(mealSlotId: Long) = "recipe_builder/$mealSlotId"
+    data object RecipeBuilder : Screen("recipe_builder/{mealSlotId}/{epochDay}") {
+        fun createRoute(mealSlotId: Long, epochDay: Long) = "recipe_builder/$mealSlotId/$epochDay"
     }
 
     data object WeeklySummary : Screen("weekly_summary")

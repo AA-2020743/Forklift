@@ -6,7 +6,6 @@ import com.caloriecalc.app.data.local.dao.MealTemplateSummary
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.FoodRepository
 import com.caloriecalc.app.data.repository.MealTemplateRepository
-import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,9 +65,8 @@ class AddFoodViewModel(
             food
         }
 
-    /** Templates always apply to today — quick-add flows never target a past day. */
-    suspend fun applyTemplate(templateId: Long, mealSlotId: Long) {
-        mealTemplateRepository.applyTemplate(templateId, mealSlotId, LocalDate.now().toEpochDay())
+    suspend fun applyTemplate(templateId: Long, mealSlotId: Long, epochDay: Long) {
+        mealTemplateRepository.applyTemplate(templateId, mealSlotId, epochDay)
     }
 
     fun deleteTemplate(id: Long) {

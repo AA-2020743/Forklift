@@ -64,12 +64,14 @@ import com.caloriecalc.app.ui.components.foodItemIcon
 import com.caloriecalc.app.ui.components.stableAccentColor
 import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddFoodScreen(
     mealSlotId: Long,
+    epochDay: Long,
     onBack: () -> Unit,
     onScanBarcode: (Long) -> Unit,
     onManualEntry: (Long) -> Unit,
@@ -93,6 +95,7 @@ fun AddFoodScreen(
     val templates by viewModel.templates.collectAsStateWithLifecycle()
 
     val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
+    val isToday = epochDay == LocalDate.now().toEpochDay()
     var mealName by remember { mutableStateOf("meal") }
     LaunchedEffect(mealSlotId) {
         if (!isQuickAdd) {
@@ -115,7 +118,13 @@ fun AddFoodScreen(
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(if (isQuickAdd) "Scan or add food" else "Add to $mealName") },
+                    title = {
+                        val base = if (isQuickAdd) "Scan or add food" else "Add to $mealName"
+                        Text(
+                            if (isToday) base
+                            else "$base — ${LocalDate.ofEpochDay(epochDay).format(DateTimeFormatter.ofPattern("EEE, MMM d"))}"
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
@@ -186,7 +195,7 @@ fun AddFoodScreen(
                     templates = templates,
                     onApply = { templateId ->
                         scope.launch {
-                            viewModel.applyTemplate(templateId, mealSlotId)
+                            viewModel.applyTemplate(templateId, mealSlotId, epochDay)
                             onQuickAdded(mealSlotId)
                         }
                     },
@@ -277,7 +286,7 @@ fun AddFoodScreen(
                                 container.nutritionLogRepository.logFood(
                                     food,
                                     mealSlotId,
-                                    LocalDate.now().toEpochDay(),
+                                    epochDay,
                                     100.0
                                 )
                                 onQuickAdded(mealSlotId)

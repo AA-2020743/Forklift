@@ -59,6 +59,7 @@ import kotlin.math.roundToInt
 @Composable
 fun PhotoEstimateScreen(
     mealSlotId: Long,
+    epochDay: Long,
     onBack: () -> Unit,
     onLogged: () -> Unit
 ) {
@@ -67,6 +68,7 @@ fun PhotoEstimateScreen(
         factory = SimpleViewModelFactory {
             PhotoEstimateViewModel(
                 mealSlotId,
+                epochDay,
                 container.photoEstimationRepository,
                 container.foodRepository,
                 container.nutritionLogRepository
