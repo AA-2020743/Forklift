@@ -83,8 +83,8 @@ fun AppNavHost() {
                         navController.navigate(Screen.MealLog.createRoute(mealSlotId, epochDay))
                     },
                     onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) },
-                    onQuickAdd = {
-                        navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID, LocalDate.now().toEpochDay()))
+                    onQuickAdd = { epochDay ->
+                        navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID, epochDay))
                     },
                     onOpenTrends = { navController.navigate(Screen.WeeklySummary.route) }
                 )

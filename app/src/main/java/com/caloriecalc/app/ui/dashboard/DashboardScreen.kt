@@ -100,7 +100,7 @@ private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
 fun DashboardScreen(
     onMealClick: (mealSlotId: Long, epochDay: Long) -> Unit,
     onMicronutrientsClick: () -> Unit,
-    onQuickAdd: () -> Unit,
+    onQuickAdd: (epochDay: Long) -> Unit,
     onOpenTrends: () -> Unit
 ) {
     val container = rememberAppContainer()
@@ -129,10 +129,8 @@ fun DashboardScreen(
                     IconButton(onClick = onOpenTrends) {
                         Icon(Icons.Filled.QueryStats, contentDescription = "Weekly trends")
                     }
-                    if (state.isToday) {
-                        IconButton(onClick = onQuickAdd) {
-                            Icon(Icons.Filled.Add, contentDescription = "Scan or add a food")
-                        }
+                    IconButton(onClick = { onQuickAdd(state.selectedEpochDay) }) {
+                        Icon(Icons.Filled.Add, contentDescription = "Scan or add a food")
                     }
                 }
             )
