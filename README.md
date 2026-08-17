@@ -8,7 +8,7 @@ weight-vs-intake correlation view.
 
 | Dashboard | Shared meal time | Food logging | Profile and reminders |
 | --- | --- | --- | --- |
-| ![Forklift dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png) | ![Shared meal time control](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-time.png) | ![Food logging screen](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png) | ![Profile and reminder settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png) |
+| ![Forklift dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png?v=d92c6c9) | ![Shared meal time control](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-time.png?v=d92c6c9) | ![Food logging screen](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=d92c6c9) | ![Profile and reminder settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png?v=d92c6c9) |
 
 The screenshots show the responsive Compose UI on a Pixel emulator, including the
 dashboard, one shared time for a meal/day, food logging, and profile controls.
