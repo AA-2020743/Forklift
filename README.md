@@ -6,12 +6,9 @@ weight-vs-intake correlation view.
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/images/dashboard.png" width="220" alt="Forklift dashboard" />
-  <img src="docs/images/meal-time.png" width="220" alt="Shared meal time control" />
-  <img src="docs/images/add-food.png" width="220" alt="Food logging screen" />
-  <img src="docs/images/profile.png" width="220" alt="Profile and reminder settings" />
-</p>
+| Dashboard | Shared meal time | Food logging | Profile and reminders |
+| --- | --- | --- | --- |
+| ![Forklift dashboard](docs/images/dashboard.png) | ![Shared meal time control](docs/images/meal-time.png) | ![Food logging screen](docs/images/add-food.png) | ![Profile and reminder settings](docs/images/profile.png) |
 
 The screenshots show the responsive Compose UI on a Pixel emulator, including the
 dashboard, one shared time for a meal/day, food logging, and profile controls.
