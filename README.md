@@ -6,6 +6,26 @@ with practical feedback: macro ranges instead of single-number targets,
 muscle-coverage suggestions, protein-spacing reminders, and an estimate of actual
 maintenance calories from weight and intake history.
 
+## Screenshots
+
+These Pixel emulator captures use deterministic demo data rather than real user data.
+
+| Daily dashboard | Micronutrient detail |
+| --- | --- |
+| ![Forklift calorie and macro dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png?v=20260818-demo) | ![Forklift micronutrient progress](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/micronutrients.png?v=20260818-demo) |
+
+| Meal overview | Shared meal time and entries |
+| --- | --- |
+| ![Forklift hydration and meal overview](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meals.png?v=20260818-demo) | ![Forklift shared meal time and food entries](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-log.png?v=20260818-demo) |
+
+| Food logging options | Lifting coverage and history |
+| --- | --- |
+| ![Forklift recent foods and logging options](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=20260818-demo) | ![Forklift muscle coverage suggestions](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/lifting.png?v=20260818-demo) |
+
+| Weight and maintenance insight | Profile and reminders |
+| --- | --- |
+| ![Forklift weight trend and maintenance estimate](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/weight.png?v=20260818-demo) | ![Forklift profile reminders and AI settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png?v=20260818-demo) |
+
 ## Features
 
 ### Daily nutrition dashboard
@@ -159,23 +179,3 @@ Key versions are pinned in `gradle/libs.versions.toml`:
 - Exercise calories are displayed but do not increase the daily calorie budget.
 - The app currently uses metric units and has no app-managed cloud sync or export.
   Android-managed backup/restore may include the local database.
-
-## Screenshots
-
-These Pixel emulator captures use deterministic demo data rather than real user data.
-
-| Daily dashboard | Micronutrient detail |
-| --- | --- |
-| ![Forklift calorie and macro dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png?v=20260818-demo) | ![Forklift micronutrient progress](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/micronutrients.png?v=20260818-demo) |
-
-| Meal overview | Shared meal time and entries |
-| --- | --- |
-| ![Forklift hydration and meal overview](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meals.png?v=20260818-demo) | ![Forklift shared meal time and food entries](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-log.png?v=20260818-demo) |
-
-| Food logging options | Lifting coverage and history |
-| --- | --- |
-| ![Forklift recent foods and logging options](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=20260818-demo) | ![Forklift muscle coverage suggestions](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/lifting.png?v=20260818-demo) |
-
-| Weight and maintenance insight | Profile and reminders |
-| --- | --- |
-| ![Forklift weight trend and maintenance estimate](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/weight.png?v=20260818-demo) | ![Forklift profile reminders and AI settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png?v=20260818-demo) |
