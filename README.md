@@ -4,6 +4,18 @@ An Android app for tracking calories/macros and lifting sessions together, with
 visual thresholds for protein/fat, muscle-coverage exercise suggestions, and a
 weight-vs-intake correlation view.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/images/dashboard.png" width="220" alt="Forklift dashboard" />
+  <img src="docs/images/meal-time.png" width="220" alt="Shared meal time control" />
+  <img src="docs/images/add-food.png" width="220" alt="Food logging screen" />
+  <img src="docs/images/profile.png" width="220" alt="Profile and reminder settings" />
+</p>
+
+The screenshots show the responsive Compose UI on a Pixel emulator, including the
+dashboard, one shared time for a meal/day, food logging, and profile controls.
+
 ## Features
 
 - **Barcode scanning** (CameraX + ML Kit) looked up against the free
