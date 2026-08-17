@@ -145,11 +145,28 @@ class FoodRepository(
             servingName = servingName,
             source = FoodSource.MANUAL
         )
+        validateFoodValues(food)
         val id = foodDao.insert(food)
         return food.copy(id = id)
     }
 
-    suspend fun updateFood(food: FoodItem) = foodDao.update(food)
+    suspend fun updateFood(food: FoodItem) {
+        validateFoodValues(food)
+        foodDao.update(food)
+    }
+
+    private fun validateFoodValues(food: FoodItem) {
+        require(food.name.isNotBlank()) { "Food name must not be blank" }
+        require(food.caloriesPer100g.isFinite() && food.caloriesPer100g >= 0.0)
+        require(food.proteinPer100g.isFinite() && food.proteinPer100g >= 0.0)
+        require(food.fatPer100g.isFinite() && food.fatPer100g >= 0.0)
+        require(food.carbsPer100g.isFinite() && food.carbsPer100g >= 0.0)
+        require(food.micronutrients.allNonNegative())
+        require(food.waterContentPercent == null ||
+            (food.waterContentPercent.isFinite() && food.waterContentPercent in 0.0..100.0))
+        require(food.servingSizeGrams == null ||
+            (food.servingSizeGrams.isFinite() && food.servingSizeGrams > 0.0))
+    }
 }
 
 /**

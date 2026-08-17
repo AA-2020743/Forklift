@@ -51,7 +51,13 @@ class AppContainer(context: Context) {
     }
 
     val nutritionLogRepository: NutritionLogRepository by lazy {
-        NutritionLogRepository(database.mealEntryDao(), database.foodDao())
+        NutritionLogRepository(
+            database,
+            database.mealEntryDao(),
+            database.foodDao(),
+            database.mealTimeDao(),
+            database.mealSlotDao()
+        )
     }
 
     val mealSlotRepository: MealSlotRepository by lazy {
@@ -59,7 +65,14 @@ class AppContainer(context: Context) {
     }
 
     val mealTemplateRepository: MealTemplateRepository by lazy {
-        MealTemplateRepository(database.mealTemplateDao(), database.mealEntryDao(), database.foodDao())
+        MealTemplateRepository(
+            database,
+            database.mealTemplateDao(),
+            database.mealEntryDao(),
+            database.foodDao(),
+            database.mealTimeDao(),
+            database.mealSlotDao()
+        )
     }
 
     val micronutrientBackfill: MicronutrientBackfill by lazy {

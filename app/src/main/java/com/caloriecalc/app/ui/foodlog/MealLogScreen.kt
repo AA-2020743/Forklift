@@ -1,5 +1,6 @@
 package com.caloriecalc.app.ui.foodlog
 
+import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,7 +34,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,12 +54,16 @@ import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.SimpleViewModelFactory
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.FoodIconBadge
+import com.caloriecalc.app.ui.components.epochMillisForMealTime
 import com.caloriecalc.app.ui.components.foodItemIcon
 import com.caloriecalc.app.ui.components.formatGrams
+import com.caloriecalc.app.ui.components.formatMealTime
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.components.mealTimeParts
 import com.caloriecalc.app.ui.components.stableAccentColor
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
@@ -83,10 +91,16 @@ fun MealLogScreen(
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val yesterdayEntries by viewModel.yesterdayEntries.collectAsStateWithLifecycle()
     val mealSlot by viewModel.mealSlot.collectAsStateWithLifecycle()
+    val storedMealTime by viewModel.mealTime.collectAsStateWithLifecycle()
     val mealName = mealSlot?.name ?: "Meal"
     val isToday = viewModel.isToday
     var editingEntry by remember { mutableStateOf<MealEntryWithFood?>(null) }
+    var showMealTimePicker by remember { mutableStateOf(false) }
     var showSaveTemplateDialog by remember { mutableStateOf(false) }
+    val nowFallback = remember { LocalTime.now() }
+    val displayedMealTime = storedMealTime ?: mealSlot?.takeIf { it.hasTargetTime }?.let {
+        epochMillisForMealTime(epochDay, it.targetHour!!, it.targetMinute!!)
+    } ?: epochMillisForMealTime(epochDay, nowFallback.hour, nowFallback.minute)
 
     Scaffold(
         topBar = {
@@ -145,6 +159,26 @@ fun MealLogScreen(
                     if (isToday) "Nothing logged yet for ${mealName.lowercase()}."
                     else "Nothing was logged for ${mealName.lowercase()} on this day."
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        if (isToday) "Today's meal time" else "Meal time for this day",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            formatMealTime(displayedMealTime),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        TextButton(onClick = { showMealTimePicker = true }) {
+                            Text(if (storedMealTime == null) "Set" else "Change")
+                        }
+                    }
+                }
                 if (yesterdayEntries.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedButton(onClick = { viewModel.repeatPreviousDay() }) {
@@ -164,10 +198,32 @@ fun MealLogScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    Text(
-                        text = "$totalCalories kcal total",
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Column {
+                        Text(
+                            text = "$totalCalories kcal total",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                if (isToday) "Today's meal time" else "Meal time for this day",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    formatMealTime(displayedMealTime),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                TextButton(onClick = { showMealTimePicker = true }) {
+                                    Text(if (storedMealTime == null) "Set" else "Change")
+                                }
+                            }
+                        }
+                    }
                 }
                 items(entries, key = { it.entry.id }) { item ->
                     Card(modifier = Modifier.fillMaxWidth()) {
@@ -221,6 +277,44 @@ fun MealLogScreen(
         )
     }
 
+    if (showMealTimePicker) {
+        val context = LocalContext.current
+        val (hour, minute) = mealTimeParts(displayedMealTime)
+        val state = rememberTimePickerState(
+            initialHour = hour,
+            initialMinute = minute,
+            is24Hour = DateFormat.is24HourFormat(context)
+        )
+        val selectedMealTime = epochMillisForMealTime(epochDay, state.hour, state.minute)
+        val isFutureMealTime = epochDay == LocalDate.now().toEpochDay() &&
+            selectedMealTime > System.currentTimeMillis()
+        AlertDialog(
+            onDismissRequest = { showMealTimePicker = false },
+            title = { Text("Set $mealName time") },
+            text = {
+                Column {
+                    TimePicker(state = state)
+                    if (isFutureMealTime) {
+                        Text(
+                            "Consumed time cannot be in the future.",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setMealTime(selectedMealTime)
+                    showMealTimePicker = false
+                }, enabled = !isFutureMealTime) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMealTimePicker = false }) { Text("Cancel") }
+            }
+        )
+    }
+
     if (showSaveTemplateDialog) {
         var templateName by remember { mutableStateOf(mealName) }
         AlertDialog(
@@ -258,7 +352,6 @@ fun MealLogScreen(
         )
     }
 }
-
 private enum class EditQuantityMode { GRAMS, SERVINGS }
 
 @Composable

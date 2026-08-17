@@ -27,6 +27,7 @@ class MealSlotRepository(
      * something to anchor on without an extra setup step.
      */
     suspend fun addMeal(name: String, now: LocalTime = LocalTime.now()) {
+        require(name.isNotBlank())
         val nextOrder = dao.getMaxSortOrder() + 1
         dao.insert(
             MealSlot(
@@ -38,7 +39,12 @@ class MealSlotRepository(
         )
     }
 
-    suspend fun setMealTime(id: Long, hour: Int?, minute: Int?) = dao.updateTargetTime(id, hour, minute)
+    suspend fun setMealTime(id: Long, hour: Int?, minute: Int?) {
+        require((hour == null) == (minute == null))
+        require(hour == null || hour in 0..23)
+        require(minute == null || minute in 0..59)
+        dao.updateTargetTime(id, hour, minute)
+    }
 
     suspend fun setRemindersEnabled(id: Long, enabled: Boolean) = dao.updateRemindersEnabled(id, enabled)
 

@@ -14,24 +14,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Blender
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -92,6 +91,7 @@ fun AddFoodScreen(
     val localResults by viewModel.localResults.collectAsStateWithLifecycle()
     val recent by viewModel.recent.collectAsStateWithLifecycle()
     val frequent by viewModel.frequent.collectAsStateWithLifecycle()
+    val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val onlineResults by viewModel.onlineResults.collectAsStateWithLifecycle()
     val isSearchingOnline by viewModel.isSearchingOnline.collectAsStateWithLifecycle()
     val onlineError by viewModel.onlineError.collectAsStateWithLifecycle()
@@ -109,6 +109,8 @@ fun AddFoodScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showQuickAddDialog by remember { mutableStateOf(false) }
+    var showFoodActionsMenu by remember { mutableStateOf(false) }
+    var applyingTemplateId by remember { mutableStateOf<Long?>(null) }
     val scope = rememberCoroutineScope()
 
     val onSelect: (FoodItem) -> Unit = { food ->
@@ -135,25 +137,57 @@ fun AddFoodScreen(
                         }
                     },
                     actions = {
-                        if (!isQuickAdd) {
-                            IconButton(onClick = { onPhotoEstimate(mealSlotId) }) {
-                                Icon(Icons.Filled.CameraAlt, contentDescription = "Estimate from photo")
+                        IconButton(onClick = { showFoodActionsMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "More food options")
+                        }
+                        DropdownMenu(
+                            expanded = showFoodActionsMenu,
+                            onDismissRequest = { showFoodActionsMenu = false }
+                        ) {
+                            if (!isQuickAdd) {
+                                DropdownMenuItem(
+                                    text = { Text("Estimate from photo") },
+                                    onClick = {
+                                        showFoodActionsMenu = false
+                                        onPhotoEstimate(mealSlotId)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Quick add calories") },
+                                    onClick = {
+                                        showFoodActionsMenu = false
+                                        showQuickAddDialog = true
+                                    }
+                                )
                             }
-                            IconButton(onClick = { showQuickAddDialog = true }) {
-                                Icon(Icons.Filled.Bolt, contentDescription = "Quick add calories")
-                            }
-                        }
-                        IconButton(onClick = { onScanBarcode(mealSlotId) }) {
-                            Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
-                        }
-                        IconButton(onClick = { onCreateProteinShake(mealSlotId) }) {
-                            Icon(Icons.Filled.Blender, contentDescription = "Create protein shake")
-                        }
-                        IconButton(onClick = { onCreateRecipe(mealSlotId) }) {
-                            Icon(Icons.Filled.DinnerDining, contentDescription = "Build a recipe")
-                        }
-                        IconButton(onClick = { onManualEntry(mealSlotId) }) {
-                            Icon(Icons.Filled.Add, contentDescription = "Enter manually")
+                            DropdownMenuItem(
+                                text = { Text("Scan barcode") },
+                                onClick = {
+                                    showFoodActionsMenu = false
+                                    onScanBarcode(mealSlotId)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Create protein shake") },
+                                onClick = {
+                                    showFoodActionsMenu = false
+                                    onCreateProteinShake(mealSlotId)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Build a recipe") },
+                                onClick = {
+                                    showFoodActionsMenu = false
+                                    onCreateRecipe(mealSlotId)
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Enter manually") },
+                                onClick = {
+                                    showFoodActionsMenu = false
+                                    onManualEntry(mealSlotId)
+                                }
+                            )
                         }
                     }
                 )
@@ -171,8 +205,9 @@ fun AddFoodScreen(
                     Tab(selected = selectedTab == 0, onClick = { selectedTab = 0 }, text = { Text("Search") })
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }, text = { Text("Recent") })
                     Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }, text = { Text("Frequent") })
+                    Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Favorites") })
                     if (!isQuickAdd) {
-                        Tab(selected = selectedTab == 3, onClick = { selectedTab = 3 }, text = { Text("Templates") })
+                        Tab(selected = selectedTab == 4, onClick = { selectedTab = 4 }, text = { Text("Templates") })
                     }
                 }
             }
@@ -193,16 +228,25 @@ fun AddFoodScreen(
                     hasSearchedOnline = hasSearchedOnline,
                     onSearchOnline = viewModel::searchOnline,
                     onSelect = onSelect,
-                    onEditFood = onEditFood
+                    onEditFood = onEditFood,
+                    onToggleFavorite = viewModel::toggleFavorite
                 )
-                1 -> FoodListContent(recent, onSelect, onEditFood, "No recently used foods yet.")
-                2 -> FoodListContent(frequent, onSelect, onEditFood, "No frequently used foods yet.")
+                1 -> FoodListContent(recent, onSelect, onEditFood, viewModel::toggleFavorite, "No recently used foods yet.")
+                2 -> FoodListContent(frequent, onSelect, onEditFood, viewModel::toggleFavorite, "No frequently used foods yet.")
+                3 -> FoodListContent(favorites, onSelect, onEditFood, viewModel::toggleFavorite, "No favorite foods yet.")
                 else -> TemplatesTabContent(
                     templates = templates,
                     onApply = { templateId ->
-                        scope.launch {
-                            viewModel.applyTemplate(templateId, mealSlotId, epochDay)
-                            onQuickAdded(mealSlotId)
+                        if (applyingTemplateId == null) {
+                            applyingTemplateId = templateId
+                            scope.launch {
+                                try {
+                                    viewModel.applyTemplate(templateId, mealSlotId, epochDay)
+                                    onQuickAdded(mealSlotId)
+                                } finally {
+                                    applyingTemplateId = null
+                                }
+                            }
                         }
                     },
                     onDelete = viewModel::deleteTemplate
@@ -217,6 +261,7 @@ fun AddFoodScreen(
         var protein by remember { mutableStateOf("") }
         var fat by remember { mutableStateOf("") }
         var carbs by remember { mutableStateOf("") }
+        val quickAddMacrosValid = listOf(protein, fat, carbs).all(::isNonNegativeNumberOrBlank)
 
         AlertDialog(
             onDismissRequest = { showQuickAddDialog = false },
@@ -300,7 +345,8 @@ fun AddFoodScreen(
                         }
                         showQuickAddDialog = false
                     },
-                    enabled = calories.toDoubleOrNull() != null
+                     enabled = calories.toDoubleOrNull()?.let { it.isFinite() && it >= 0.0 } == true &&
+                         quickAddMacrosValid
                 ) { Text("Log") }
             },
             dismissButton = {
@@ -320,7 +366,8 @@ private fun SearchTabContent(
     hasSearchedOnline: Boolean,
     onSearchOnline: () -> Unit,
     onSelect: (FoodItem) -> Unit,
-    onEditFood: (Long) -> Unit
+    onEditFood: (Long) -> Unit,
+    onToggleFavorite: (FoodItem) -> Unit
 ) {
     if (query.isBlank()) {
         EmptyState("Search for a food by name, or scan a barcode.")
@@ -329,7 +376,9 @@ private fun SearchTabContent(
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (localResults.isNotEmpty()) {
             item { Text("From your food list", style = MaterialTheme.typography.titleMedium) }
-            items(localResults, key = { "local_${it.id}" }) { FoodRow(it, onSelect, onEditFood) }
+            items(localResults, key = { "local_${it.id}" }) {
+                FoodRow(it, onSelect, onEditFood, onToggleFavorite)
+            }
         }
         item {
             Row(
@@ -383,7 +432,7 @@ private fun SearchTabContent(
             }
             onlineResults.isNotEmpty() ->
                 items(onlineResults, key = { "online_${it.barcode ?: it.name}" }) {
-                    FoodRow(it, onSelect, onEditFood)
+                    FoodRow(it, onSelect, onEditFood, onToggleFavorite)
                 }
             hasSearchedOnline -> item {
                 Text(
@@ -402,6 +451,7 @@ private fun FoodListContent(
     foods: List<FoodItem>,
     onSelect: (FoodItem) -> Unit,
     onEditFood: (Long) -> Unit,
+    onToggleFavorite: (FoodItem) -> Unit,
     emptyMessage: String
 ) {
     if (foods.isEmpty()) {
@@ -409,7 +459,7 @@ private fun FoodListContent(
         return
     }
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(foods, key = { it.id }) { FoodRow(it, onSelect, onEditFood) }
+        items(foods, key = { it.id }) { FoodRow(it, onSelect, onEditFood, onToggleFavorite) }
     }
 }
 
@@ -456,7 +506,12 @@ private fun TemplatesTabContent(
 }
 
 @Composable
-private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit, onEditFood: (Long) -> Unit) {
+private fun FoodRow(
+    food: FoodItem,
+    onSelect: (FoodItem) -> Unit,
+    onEditFood: (Long) -> Unit,
+    onToggleFavorite: (FoodItem) -> Unit
+) {
     Card(modifier = Modifier.fillMaxWidth(), onClick = { onSelect(food) }) {
         Row(
             modifier = Modifier
@@ -476,6 +531,12 @@ private fun FoodRow(food: FoodItem, onSelect: (FoodItem) -> Unit, onEditFood: (L
                 )
             }
             if (food.id != 0L) {
+                IconButton(onClick = { onToggleFavorite(food) }) {
+                    Icon(
+                        imageVector = if (food.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                        contentDescription = if (food.isFavorite) "Remove ${food.name} from favorites" else "Favorite ${food.name}"
+                    )
+                }
                 IconButton(onClick = { onEditFood(food.id) }) {
                     Icon(Icons.Filled.Edit, contentDescription = "Edit ${food.name}")
                 }

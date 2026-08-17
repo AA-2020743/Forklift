@@ -41,6 +41,12 @@ fun formatMacroValue(value: Double): String {
     return if (rounded == rounded.toLong().toDouble()) rounded.toLong().toString() else rounded.toString()
 }
 
+fun isNonNegativeNumberOrBlank(value: String): Boolean =
+    value.isBlank() || value.toDoubleOrNull()?.let { it.isFinite() && it >= 0.0 } == true
+
+fun isPositiveNumber(value: String): Boolean =
+    value.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true
+
 /**
  * The macro-entry portion of the manual/edit food forms: a Per 100g / Per serving toggle plus
  * the calorie/protein/fat/carb fields, labeled to match whichever basis is selected. Serving

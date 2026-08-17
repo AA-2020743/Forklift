@@ -16,6 +16,7 @@ class WeightRepository(private val dao: WeightLogDao) {
     suspend fun hasLoggedForDay(epochDay: Long): Boolean = dao.getForDay(epochDay) != null
 
     suspend fun logWeight(epochDay: Long, weightKg: Double) {
+        require(weightKg.isFinite() && weightKg > 0.0)
         dao.upsert(WeightLog(epochDay = epochDay, weightKg = weightKg))
     }
 

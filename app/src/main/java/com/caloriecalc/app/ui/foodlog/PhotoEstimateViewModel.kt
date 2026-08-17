@@ -18,12 +18,23 @@ import kotlinx.coroutines.launch
 data class EditableEstimate(
     val original: EstimatedFoodItemDto,
     val name: String = original.name,
-    val grams: Double = original.estimatedGrams,
-    val caloriesPer100g: Double = original.caloriesPer100g,
-    val proteinPer100g: Double = original.proteinPer100g,
-    val fatPer100g: Double = original.fatPer100g,
-    val carbsPer100g: Double = original.carbsPer100g
+    val gramsText: String = formatEstimateNumber(original.estimatedGrams),
+    val caloriesPer100gText: String = formatEstimateNumber(original.caloriesPer100g),
+    val proteinPer100gText: String = formatEstimateNumber(original.proteinPer100g),
+    val fatPer100gText: String = formatEstimateNumber(original.fatPer100g),
+    val carbsPer100gText: String = formatEstimateNumber(original.carbsPer100g)
 ) {
+    val grams: Double get() = gramsText.toDoubleOrNull() ?: 0.0
+    val caloriesPer100g: Double get() = caloriesPer100gText.toDoubleOrNull() ?: 0.0
+    val proteinPer100g: Double get() = proteinPer100gText.toDoubleOrNull() ?: 0.0
+    val fatPer100g: Double get() = fatPer100gText.toDoubleOrNull() ?: 0.0
+    val carbsPer100g: Double get() = carbsPer100gText.toDoubleOrNull() ?: 0.0
+
+    val isValid: Boolean
+        get() = name.isNotBlank() && grams.isFinite() && grams > 0.0 &&
+            listOf(caloriesPer100g, proteinPer100g, fatPer100g, carbsPer100g)
+                .all { it.isFinite() && it >= 0.0 }
+
     fun toFoodItem(): FoodItem = original.copy(
         name = name,
         caloriesPer100g = caloriesPer100g,
@@ -83,7 +94,9 @@ class PhotoEstimateViewModel(
 
     fun logAll(onDone: () -> Unit) {
         viewModelScope.launch {
-            _uiState.value.items.forEach { editable ->
+            val items = _uiState.value.items
+            if (items.isEmpty() || items.any { !it.isValid }) return@launch
+            items.forEach { editable ->
                 val saved = foodRepository.saveAndUse(editable.toFoodItem())
                 nutritionLogRepository.logFood(saved, mealSlotId, epochDay, editable.grams)
             }
@@ -91,3 +104,6 @@ class PhotoEstimateViewModel(
         }
     }
 }
+
+private fun formatEstimateNumber(value: Double): String =
+    if (value == value.toInt().toDouble()) value.toInt().toString() else value.toString()

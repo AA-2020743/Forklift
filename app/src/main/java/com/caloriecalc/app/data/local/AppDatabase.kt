@@ -10,6 +10,7 @@ import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.dao.MealEntryDao
 import com.caloriecalc.app.data.local.dao.MealSlotDao
 import com.caloriecalc.app.data.local.dao.MealTemplateDao
+import com.caloriecalc.app.data.local.dao.MealTimeDao
 import com.caloriecalc.app.data.local.dao.SetEntryDao
 import com.caloriecalc.app.data.local.dao.UserProfileDao
 import com.caloriecalc.app.data.local.dao.WaterLogDao
@@ -24,6 +25,7 @@ import com.caloriecalc.app.data.local.entity.MealEntry
 import com.caloriecalc.app.data.local.entity.MealSlot
 import com.caloriecalc.app.data.local.entity.MealTemplate
 import com.caloriecalc.app.data.local.entity.MealTemplateItem
+import com.caloriecalc.app.data.local.entity.MealTime
 import com.caloriecalc.app.data.local.entity.SetEntry
 import com.caloriecalc.app.data.local.entity.UserProfile
 import com.caloriecalc.app.data.local.entity.WaterLog
@@ -48,9 +50,10 @@ import com.caloriecalc.app.data.local.entity.WorkoutTemplateExercise
         ActivityLog::class,
         WaterLog::class,
         MealTemplate::class,
-        MealTemplateItem::class
+        MealTemplateItem::class,
+        MealTime::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -59,6 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun mealEntryDao(): MealEntryDao
     abstract fun mealSlotDao(): MealSlotDao
     abstract fun mealTemplateDao(): MealTemplateDao
+    abstract fun mealTimeDao(): MealTimeDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun weightLogDao(): WeightLogDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao

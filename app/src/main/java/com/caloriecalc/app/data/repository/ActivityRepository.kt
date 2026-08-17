@@ -18,6 +18,10 @@ class ActivityRepository(private val dao: ActivityLogDao) {
         steps: Int? = null,
         caloriesBurnedOverride: Int? = null
     ): Long {
+        require(durationMinutes > 0)
+        require(bodyWeightKg.isFinite() && bodyWeightKg > 0.0)
+        require(steps == null || steps >= 0)
+        require(caloriesBurnedOverride == null || caloriesBurnedOverride >= 0)
         val calories = caloriesBurnedOverride
             ?: ActivityCalculator.estimateCaloriesBurned(type.met, durationMinutes, bodyWeightKg)
         return dao.insert(

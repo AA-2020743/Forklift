@@ -185,8 +185,17 @@ fun PhotoEstimateScreen(
 
                 Button(
                     onClick = { viewModel.logAll(onLogged) },
+                    enabled = state.items.all { it.isValid },
                     modifier = Modifier.fillMaxWidth()
                 ) { Text("Log all to this meal") }
+                if (state.items.any { !it.isValid }) {
+                    Text(
+                        "Complete each item with a positive gram amount and non-negative nutrition values before logging.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
             }
         }
     }
@@ -218,38 +227,47 @@ private fun EstimateCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
-                value = formatNumber(item.grams),
-                onValueChange = { text -> text.toDoubleOrNull()?.let { onChange(item.copy(grams = it)) } },
+                value = item.gramsText,
+                onValueChange = { text -> onChange(item.copy(gramsText = text)) },
                 label = { Text("Grams") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedTextField(
-                    value = formatNumber(item.caloriesPer100g),
-                    onValueChange = { text -> text.toDoubleOrNull()?.let { onChange(item.copy(caloriesPer100g = it)) } },
+                    value = item.caloriesPer100gText,
+                    onValueChange = { text -> onChange(item.copy(caloriesPer100gText = text)) },
                     label = { Text("kcal/100g") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
-                    value = formatNumber(item.proteinPer100g),
-                    onValueChange = { text -> text.toDoubleOrNull()?.let { onChange(item.copy(proteinPer100g = it)) } },
+                    value = item.proteinPer100gText,
+                    onValueChange = { text -> onChange(item.copy(proteinPer100gText = text)) },
                     label = { Text("P/100g") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
                 )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedTextField(
-                    value = formatNumber(item.fatPer100g),
-                    onValueChange = { text -> text.toDoubleOrNull()?.let { onChange(item.copy(fatPer100g = it)) } },
+                    value = item.fatPer100gText,
+                    onValueChange = { text -> onChange(item.copy(fatPer100gText = text)) },
                     label = { Text("F/100g") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
-                    value = formatNumber(item.carbsPer100g),
-                    onValueChange = { text -> text.toDoubleOrNull()?.let { onChange(item.copy(carbsPer100g = it)) } },
+                    value = item.carbsPer100gText,
+                    onValueChange = { text -> onChange(item.copy(carbsPer100gText = text)) },
                     label = { Text("C/100g") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
@@ -262,6 +280,13 @@ private fun EstimateCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (!item.isValid) {
+                Text(
+                    "Enter a positive gram amount and non-negative nutrition values.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

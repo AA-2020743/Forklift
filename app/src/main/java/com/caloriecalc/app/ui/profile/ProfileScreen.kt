@@ -85,6 +85,7 @@ fun ProfileScreen() {
         factory = SimpleViewModelFactory { ProfileViewModel(container.profileRepository, container.reminderScheduler) }
     )
     val mealSlots by container.mealSlotRepository.observeActive().collectAsStateWithLifecycle(initialValue = emptyList())
+    val allMealSlots by container.mealSlotRepository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -163,6 +164,15 @@ fun ProfileScreen() {
         val fatMinPercentOfCalories = liveTargets.fat.minGrams * 9.0 / liveTargets.calorieTarget * 100.0
         val fatMaxPercentOfCalories = liveTargets.fat.maxGrams * 9.0 / liveTargets.calorieTarget * 100.0
         val fatPercentHealthy = fatMinPercentOfCalories >= 20.0 && fatMaxPercentOfCalories <= 30.0
+        val profileInputsValid = positiveInput(bodyWeightText) && positiveInput(heightText) &&
+            positiveIntegerInput(ageText) && nonNegativeInput(proteinMinText) &&
+            nonNegativeInput(proteinMaxText) &&
+            (proteinMaxText.toDoubleOrNull() ?: -1.0) >= (proteinMinText.toDoubleOrNull() ?: 0.0) &&
+            nonNegativeInput(fatMinText) && nonNegativeInput(fatMaxText) &&
+            (fatMaxText.toDoubleOrNull() ?: -1.0) >= (fatMinText.toDoubleOrNull() ?: 0.0) &&
+            (manualCalorieText.isBlank() || positiveInput(manualCalorieText)) &&
+            (proteinGapText.toIntOrNull()?.let { it in 1..12 } == true) &&
+            positiveInput(proteinDoseText)
 
         LazyColumn(
             modifier = Modifier
@@ -410,7 +420,7 @@ fun ProfileScreen() {
                     Column(modifier = Modifier.padding(16.dp)) {
                         SectionHeader(Icons.Filled.RestaurantMenu, "Meals")
                         Text(
-                            "Meal times anchor the protein-spacing nudges below. New meals start " +
+                            "Typical meal times anchor the protein-spacing nudges below. New meals start " +
                                 "at the time you add them.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -447,6 +457,31 @@ fun ProfileScreen() {
                                     scope.launch { container.mealSlotRepository.removeMeal(slot.id) }
                                 }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Remove ${slot.name}")
+                                }
+                            }
+                        }
+                        val archivedMeals = allMealSlots.filter { it.isArchived }
+                        if (archivedMeals.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                "Archived meals",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            archivedMeals.forEach { slot ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        slot.name,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    TextButton(onClick = {
+                                        scope.launch { container.mealSlotRepository.restoreMeal(slot.id) }
+                                    }) { Text("Restore") }
                                 }
                             }
                         }
@@ -598,6 +633,13 @@ fun ProfileScreen() {
             }
 
             item {
+                if (!profileInputsValid) {
+                    Text(
+                        "Check the numeric settings: values must be positive, and each maximum must be at least its minimum.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
                 Button(
                     onClick = {
                         val updated = loaded.copy(
@@ -626,6 +668,7 @@ fun ProfileScreen() {
                         viewModel.updateProfile(updated)
                         initialProfile = updated
                     },
+                    enabled = profileInputsValid,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Save")
@@ -729,3 +772,12 @@ private fun formatReminderTime(context: android.content.Context, hour: Int, minu
 
 private fun formatSuggestion(value: Double): String =
     if (value == value.roundToInt().toDouble()) value.roundToInt().toString() else value.toString()
+
+private fun positiveInput(value: String): Boolean =
+    value.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true
+
+private fun nonNegativeInput(value: String): Boolean =
+    value.toDoubleOrNull()?.let { it.isFinite() && it >= 0.0 } == true
+
+private fun positiveIntegerInput(value: String): Boolean =
+    value.toIntOrNull()?.let { it > 0 } == true

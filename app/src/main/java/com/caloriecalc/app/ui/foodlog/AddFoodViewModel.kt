@@ -39,6 +39,9 @@ class AddFoodViewModel(
     val frequent: StateFlow<List<FoodItem>> = foodRepository.frequentlyUsed()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val favorites: StateFlow<List<FoodItem>> = foodRepository.favorites()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val _onlineResults = MutableStateFlow<List<FoodItem>>(emptyList())
     val onlineResults: StateFlow<List<FoodItem>> = _onlineResults.asStateFlow()
 
@@ -93,5 +96,11 @@ class AddFoodViewModel(
 
     fun deleteTemplate(id: Long) {
         viewModelScope.launch { mealTemplateRepository.deleteTemplate(id) }
+    }
+
+    fun toggleFavorite(food: FoodItem) {
+        if (food.id != 0L) {
+            viewModelScope.launch { foodRepository.setFavorite(food.id, !food.isFavorite) }
+        }
     }
 }

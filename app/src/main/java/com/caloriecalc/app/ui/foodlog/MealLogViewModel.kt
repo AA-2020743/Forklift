@@ -32,6 +32,10 @@ class MealLogViewModel(
         nutritionLogRepository.entriesForMeal(epochDay, mealSlotId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val mealTime: StateFlow<Long?> =
+        nutritionLogRepository.observeMealTime(epochDay, mealSlotId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     /** The day before whichever day is being viewed — powers "Repeat previous day". */
     val yesterdayEntries: StateFlow<List<MealEntryWithFood>> =
         nutritionLogRepository.entriesForMeal(epochDay - 1, mealSlotId)
@@ -52,6 +56,12 @@ class MealLogViewModel(
     fun updateEntryQuantity(entryWithFood: MealEntryWithFood, grams: Double) {
         viewModelScope.launch {
             nutritionLogRepository.updateEntryQuantity(entryWithFood.entry, entryWithFood.food, grams)
+        }
+    }
+
+    fun setMealTime(consumedAtEpochMillis: Long) {
+        viewModelScope.launch {
+            nutritionLogRepository.setMealTime(epochDay, mealSlotId, consumedAtEpochMillis)
         }
     }
 

@@ -42,9 +42,12 @@ import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.formatGrams
+import com.caloriecalc.app.ui.components.epochMillisForMealTime
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.components.mealTimeParts
 import com.caloriecalc.app.ui.navigation.QUICK_ADD_MEAL_SLOT_ID
+import java.time.LocalTime
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -86,6 +89,26 @@ fun QuantityScreen(
     }
     val targetMealSlotId = if (isQuickAdd) selectedMealSlotId else mealSlotId
     val targetMealName = if (isQuickAdd) activeMealSlots.find { it.id == selectedMealSlotId }?.name ?: "meal" else mealName
+    var storedMealTime by remember { mutableStateOf<Long?>(null) }
+    var mealTimeLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(targetMealSlotId) {
+        mealTimeLoaded = false
+        storedMealTime = targetMealSlotId?.let { targetId ->
+            container.nutritionLogRepository.getMealTime(epochDay, targetId)
+        }
+        mealTimeLoaded = targetMealSlotId != null
+    }
+
+    // The meal's "eaten at" time defaults to that meal slot's configured time of day, falling
+    // back to now when it has none set. It's adjustable and drives protein-spacing reminders.
+    val targetMealSlot = activeMealSlots.find { it.id == targetMealSlotId }
+    val nowFallback = remember { LocalTime.now() }
+    val mealTime = storedMealTime?.let { mealTimeParts(it) }
+        ?: targetMealSlot?.let { slot ->
+            if (slot.hasTargetTime) (slot.targetHour!! to slot.targetMinute!!)
+            else (nowFallback.hour to nowFallback.minute)
+        }
+        ?: (nowFallback.hour to nowFallback.minute)
 
     val currentFood = food
     if (currentFood == null) {
@@ -202,17 +225,25 @@ fun QuantityScreen(
                 onClick = {
                     val target = targetMealSlotId ?: return@Button
                     scope.launch {
-                        container.nutritionLogRepository.logFood(currentFood, target, epochDay, grams.coerceAtLeast(0.0))
+                        container.nutritionLogRepository.logFood(
+                            currentFood,
+                            target,
+                            epochDay,
+                            grams.coerceAtLeast(0.0),
+                            epochMillisForMealTime(epochDay, mealTime.first, mealTime.second),
+                            setMealTime = true
+                        )
                         onLogged()
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = grams > 0.0 && targetMealSlotId != null
+                enabled = grams > 0.0 && targetMealSlotId != null && mealTimeLoaded
             ) {
                 Text("Log to $targetMealName")
             }
         }
     }
+
 }
 
 @Composable

@@ -34,15 +34,17 @@ import com.caloriecalc.app.ui.components.nutrientIcon
 import com.caloriecalc.app.ui.theme.StatusApproaching
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
 import com.caloriecalc.app.ui.theme.StatusOnTarget
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MicronutrientsScreen(onBack: () -> Unit) {
+fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
     val container = rememberAppContainer()
     val viewModel: MicronutrientsViewModel = viewModel(
         factory = SimpleViewModelFactory {
-            MicronutrientsViewModel(container.profileRepository, container.nutritionLogRepository)
+            MicronutrientsViewModel(epochDay, container.profileRepository, container.nutritionLogRepository)
         }
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -50,7 +52,12 @@ fun MicronutrientsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Micronutrients") },
+                title = {
+                    Text(
+                        if (epochDay == LocalDate.now().toEpochDay()) "Micronutrients"
+                        else "Micronutrients · ${LocalDate.ofEpochDay(epochDay).format(DateTimeFormatter.ofPattern("MMM d"))}"
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
                 }
@@ -115,7 +122,7 @@ fun MicronutrientsScreen(onBack: () -> Unit) {
             } else if (state.foodsLogged == 0) {
                 item {
                     Text(
-                        "Nothing logged today yet — these fill in as you log food.",
+                        "Nothing logged ${if (epochDay == LocalDate.now().toEpochDay()) "today" else "on this day"} yet — these fill in as you log food.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

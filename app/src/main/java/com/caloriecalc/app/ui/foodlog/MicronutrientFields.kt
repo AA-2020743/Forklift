@@ -55,6 +55,8 @@ data class MicronutrientDraft(
         zincMg = zinc.toDoubleOrNull()
     )
 
+    fun isValid(): Boolean = toMicronutrients().allNonNegative()
+
     companion object {
         fun from(micros: Micronutrients): MicronutrientDraft = MicronutrientDraft(
             fiber = micros.fiberGrams.text(),

@@ -11,9 +11,12 @@ weight-vs-intake correlation view.
 - **Recent / frequent / favorite foods** remembered locally so repeat logging is
   one tap, plus manual entry and text search (local + online).
 - **Grams or servings** quantity entry, per food item.
-- **Meals**: Breakfast, Lunch, Dinner, Snack, Pre-workout, Post-workout.
-- **Macro thresholds**: protein target defaults to 2.3 g/kg body weight; fat has
-  a configurable safe floor/ceiling (default 20-35% of calories); carbs fill
+- **Meals**: built-in and user-managed meal slots, with a shared consumed-at time for each meal/day.
+- **Protein spacing reminders**: configurable protein dose/gap and waking window, anchored to
+  actual meal times.
+- **Hydration tracking**: plain water plus estimated hydration from logged foods and drinks.
+- **Macro thresholds**: protein defaults to a 1.6-2.4 g/kg body-weight range; fat has
+  a configurable safe floor/ceiling; carbs fill
   whatever calorie budget is left. The dashboard color-codes each macro
   (red = below threshold, amber = approaching, green = on target, blue = over).
 - **Lifting tracker**: sessions → exercises → sets (weight × reps), with an
@@ -45,8 +48,8 @@ ui/              Compose screens + ViewModels, one package per feature area
 ```
 
 Everything is local-first (Room + DataStore-free — settings live in a
-singleton Room row); the only network calls are barcode/name lookups against
-Open Food Facts.
+singleton Room row); network calls are barcode/name lookups against Open Food Facts
+and optional photo estimation through the user's Gemini API key.
 
 ## Building
 
@@ -58,17 +61,12 @@ Android SDK with API 34 installed.
 ./gradlew assembleDebug
 ```
 
-> **Note:** this project was generated in a sandboxed environment whose
-> network policy blocks `dl.google.com`, so the Android Gradle Plugin and
-> AndroidX/Google Maven artifacts could not be resolved there and the build
-> could not be run or verified end-to-end in that sandbox. The code was
-> written carefully and reviewed by hand, but you should do a normal build in
-> Android Studio (which will surface real compiler diagnostics) before relying
-> on it — treat the first build as a review step, not a formality.
+The current workspace is verified with `compileDebugKotlin`, `lintDebug`, and
+the JVM unit-test task. Run `assembleDebug` before distributing a release APK.
 
 ### Key versions pinned in `gradle/libs.versions.toml`
 
-- Kotlin 1.9.24, AGP 8.4.2, Compose BOM 2024.06.00
+- Kotlin 2.0.20, AGP 8.4.2, Compose BOM 2024.09.02
 - Room 2.6.1, Navigation Compose 2.7.7, WorkManager 2.9.0
 - CameraX 1.3.4, ML Kit barcode-scanning 17.3.0
 - Retrofit 2.11.0 + kotlinx.serialization
@@ -76,13 +74,12 @@ Android SDK with API 34 installed.
 ## Permissions
 
 - `CAMERA` — requested contextually when you open the barcode scanner.
-- `POST_NOTIFICATIONS` (Android 13+) — requested at first launch, for the
-  weight reminder.
+- `POST_NOTIFICATIONS` (Android 13+) — requested contextually, for weight and
+  protein reminders.
 
 ## Notes / possible follow-ups
 
-- Meal slots are a fixed enum (Breakfast/Lunch/Dinner/Snack/Pre-/Post-workout)
-  rather than user-customizable — straightforward to extend if needed.
+- Meal slots include the built-in meals and can be added, archived, and restored.
 - The weight-vs-calorie correlation is a simple linear trend over a rolling
   28-day window; it's meant as a directional sanity check, not a precise
   metabolic model.

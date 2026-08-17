@@ -10,7 +10,25 @@ class BodyMeasurementRepository(private val dao: BodyMeasurementDao) {
 
     suspend fun getForDay(epochDay: Long): BodyMeasurement? = dao.getForDay(epochDay)
 
-    suspend fun upsert(measurement: BodyMeasurement) = dao.upsert(measurement)
+    suspend fun upsert(measurement: BodyMeasurement) {
+        require(listOf(
+            measurement.waistCm,
+            measurement.chestCm,
+            measurement.armsCm,
+            measurement.thighsCm,
+            measurement.hipsCm,
+            measurement.neckCm
+        ).all { it == null || (it.isFinite() && it > 0.0) })
+        require(listOf(
+            measurement.waistCm,
+            measurement.chestCm,
+            measurement.armsCm,
+            measurement.thighsCm,
+            measurement.hipsCm,
+            measurement.neckCm
+        ).any { it != null })
+        dao.upsert(measurement)
+    }
 
     suspend fun deleteForDay(epochDay: Long) = dao.deleteForDay(epochDay)
 }

@@ -7,7 +7,6 @@ import com.caloriecalc.app.data.repository.ProfileRepository
 import com.caloriecalc.app.domain.MicronutrientEstimator
 import com.caloriecalc.app.domain.MicronutrientReference
 import com.caloriecalc.app.domain.MicronutrientTarget
-import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -17,7 +16,7 @@ data class MicronutrientRow(val target: MicronutrientTarget, val consumed: Doubl
 
 data class MicronutrientsUiState(
     val rows: List<MicronutrientRow> = emptyList(),
-    /** How many of today's logged foods actually carry micronutrient data. */
+    /** How many of the selected day's logged foods actually carry micronutrient data. */
     val foodsWithData: Int = 0,
     val foodsLogged: Int = 0,
     /** Names of logged foods contributing nothing, so the gap is nameable rather than mysterious. */
@@ -25,16 +24,15 @@ data class MicronutrientsUiState(
 )
 
 class MicronutrientsViewModel(
+    private val epochDay: Long,
     profileRepository: ProfileRepository,
     nutritionLogRepository: NutritionLogRepository
 ) : ViewModel() {
 
-    private val today = LocalDate.now().toEpochDay()
-
     val uiState: StateFlow<MicronutrientsUiState> = combine(
         profileRepository.observeProfile(),
-        nutritionLogRepository.totalsForDay(today),
-        nutritionLogRepository.entriesForDay(today)
+        nutritionLogRepository.totalsForDay(epochDay),
+        nutritionLogRepository.entriesForDay(epochDay)
     ) { profile, totals, entries ->
         val consumedByLabel = mapOf(
             "Fiber" to totals.fiberGrams,

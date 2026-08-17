@@ -5,7 +5,10 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.caloriecalc.app.CalorieCalcApp
 import com.caloriecalc.app.domain.SleepWindow
+import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 
@@ -43,8 +46,9 @@ class ProteinGapWorker(
             return Result.success()
         }
 
-        val lastEntry = container.nutritionLogRepository.lastProteinEntry(profile.proteinDoseGrams)
-        val gapMillis = lastEntry?.let { System.currentTimeMillis() - it.loggedAtEpochMillis }
+        val nowMillis = System.currentTimeMillis()
+        val lastEntry = container.nutritionLogRepository.lastProteinEntry(profile.proteinDoseGrams, nowMillis)
+        val gapMillis = lastEntry?.let { nowMillis - it.loggedAtEpochMillis }
         val gapHours = gapMillis?.let { it / 3_600_000.0 }
 
         // With no qualifying entry ever logged there's no gap to measure — stay quiet rather
@@ -55,28 +59,46 @@ class ProteinGapWorker(
                 hoursSinceLastProtein = gapHours.roundToInt(),
                 nextMealName = nearestMealName(container, now)
             )
+        } else {
+            // A qualifying meal resets the gap. Remove any older notification instead of leaving
+            // a stale nudge visible until the user happens to tap it.
+            NotificationHelper.clearProteinGapReminder(applicationContext)
         }
 
         container.reminderScheduler.scheduleProteinGapCheck(ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES)
         return Result.success()
     }
 
-    /** The meal slot whose target time is closest to now, to make the nudge concrete. */
+    /** The meal whose current-day time (or typical time) is closest to now, to make the nudge concrete. */
     private suspend fun nearestMealName(
         container: com.caloriecalc.app.di.AppContainer,
         now: LocalTime
     ): String? {
         val nowMinutes = now.hour * 60 + now.minute
-        return container.mealSlotRepository.observeActive().first()
-            .filter { it.remindersEnabled && it.targetMinuteOfDay != null }
-            .minByOrNull { slot ->
-                val diff = kotlin.math.abs(slot.targetMinuteOfDay!! - nowMinutes)
+        val today = LocalDate.now().toEpochDay()
+        val candidates = container.mealSlotRepository.observeActive().first()
+            .filter { it.remindersEnabled }
+            .mapNotNull { slot ->
+                val mealTime = container.nutritionLogRepository.getMealTime(today, slot.id)
+                    ?.let { millis ->
+                        Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalTime()
+                            .let { time -> time.hour * 60 + time.minute }
+                    }
+                    ?: slot.targetMinuteOfDay
+                mealTime?.let { slot to it }
+            }
+        return candidates
+            .minByOrNull { (_, mealMinutes) ->
+                val diff = kotlin.math.abs(mealMinutes - nowMinutes)
                 minOf(diff, 24 * 60 - diff)
             }
-            ?.takeIf { slot ->
-                val diff = kotlin.math.abs(slot.targetMinuteOfDay!! - nowMinutes)
+            ?.takeIf { (_, mealMinutes) ->
+                val diff = kotlin.math.abs(mealMinutes - nowMinutes)
                 minOf(diff, 24 * 60 - diff) <= 90
             }
+            ?.first
             ?.name
     }
 }

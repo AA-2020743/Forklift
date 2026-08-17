@@ -36,6 +36,11 @@ data class Micronutrients(
         zincMg = zincMg?.times(factor)
     )
 
+    fun allNonNegative(): Boolean = listOf(
+        fiberGrams, sugarGrams, saturatedFatGrams, sodiumMg, potassiumMg, calciumMg,
+        ironMg, vitaminCMg, vitaminDMcg, vitaminB12Mcg, magnesiumMg, zincMg
+    ).all { it == null || (it.isFinite() && it >= 0.0) }
+
     /**
      * Combines two absolute (already-scaled) micronutrient snapshots, e.g. when totaling a
      * recipe's ingredients. A field stays null only when neither side reports it — an

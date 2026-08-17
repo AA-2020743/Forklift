@@ -39,6 +39,9 @@ interface MealEntryDao {
     @Update
     suspend fun update(mealEntry: MealEntry)
 
+    @Query("UPDATE meal_entries SET loggedAtEpochMillis = :consumedAtEpochMillis WHERE epochDay = :epochDay AND mealSlotId = :mealSlotId")
+    suspend fun updateTimeForMeal(epochDay: Long, mealSlotId: Long, consumedAtEpochMillis: Long)
+
     @Query("SELECT * FROM meal_entries WHERE epochDay = :epochDay ORDER BY loggedAtEpochMillis ASC")
     fun getEntriesForDay(epochDay: Long): Flow<List<MealEntry>>
 
@@ -87,11 +90,12 @@ interface MealEntryDao {
     /** The most recent entry that delivered at least [minProteinGrams] of protein. */
     @Query(
         """
-        SELECT * FROM meal_entries WHERE protein >= :minProteinGrams
+        SELECT * FROM meal_entries
+        WHERE protein >= :minProteinGrams AND loggedAtEpochMillis <= :notAfterEpochMillis
         ORDER BY loggedAtEpochMillis DESC LIMIT 1
         """
     )
-    suspend fun getLastProteinEntry(minProteinGrams: Double): MealEntry?
+    suspend fun getLastProteinEntry(minProteinGrams: Double, notAfterEpochMillis: Long): MealEntry?
 
     @Query(
         """

@@ -82,6 +82,7 @@ class ReminderScheduler(private val context: Context) {
 
     fun cancelProteinGapCheck() {
         WorkManager.getInstance(context).cancelUniqueWork(PROTEIN_WORK_NAME)
+        NotificationHelper.clearProteinGapReminder(context)
     }
 
     companion object {

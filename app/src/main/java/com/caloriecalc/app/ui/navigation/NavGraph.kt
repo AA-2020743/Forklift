@@ -82,7 +82,9 @@ fun AppNavHost() {
                     onMealClick = { mealSlotId, epochDay ->
                         navController.navigate(Screen.MealLog.createRoute(mealSlotId, epochDay))
                     },
-                    onMicronutrientsClick = { navController.navigate(Screen.Micronutrients.route) },
+                    onMicronutrientsClick = { epochDay ->
+                        navController.navigate(Screen.Micronutrients.createRoute(epochDay))
+                    },
                     onQuickAdd = { epochDay ->
                         navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID, epochDay))
                     },
@@ -93,8 +95,12 @@ fun AppNavHost() {
             composable(Screen.WeeklySummary.route) {
                 TrendsScreen(onBack = { navController.popBackStack() })
             }
-            composable(Screen.Micronutrients.route) {
-                MicronutrientsScreen(onBack = { navController.popBackStack() })
+            composable(
+                route = Screen.Micronutrients.route,
+                arguments = listOf(navArgument("epochDay") { type = NavType.LongType })
+            ) { entry ->
+                val epochDay = entry.arguments?.getLong("epochDay") ?: LocalDate.now().toEpochDay()
+                MicronutrientsScreen(epochDay, onBack = { navController.popBackStack() })
             }
             composable(Screen.Workouts.route) {
                 WorkoutListScreen(

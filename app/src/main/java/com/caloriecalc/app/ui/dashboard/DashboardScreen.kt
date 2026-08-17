@@ -101,7 +101,7 @@ private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
 @Composable
 fun DashboardScreen(
     onMealClick: (mealSlotId: Long, epochDay: Long) -> Unit,
-    onMicronutrientsClick: () -> Unit,
+    onMicronutrientsClick: (epochDay: Long) -> Unit,
     onQuickAdd: (epochDay: Long) -> Unit,
     onOpenTrends: () -> Unit
 ) {
@@ -226,7 +226,10 @@ fun DashboardScreen(
             }
 
             item {
-                Card(modifier = Modifier.fillMaxWidth(), onClick = onMicronutrientsClick) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onMicronutrientsClick(state.selectedEpochDay) }
+                ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -590,6 +593,11 @@ private fun LogActivityDialog(
     var overrideText by remember { mutableStateOf("") }
 
     val duration = durationText.toIntOrNull() ?: 0
+    val steps = stepsText.toIntOrNull()
+    val override = overrideText.toIntOrNull()
+    val activityInputsValid = duration > 0 &&
+        (stepsText.isBlank() || steps != null && steps >= 0) &&
+        (overrideText.isBlank() || override != null && override >= 0)
     val estimated = ActivityCalculator.estimateCaloriesBurned(selectedType.met, duration, bodyWeightKg)
 
     AlertDialog(
@@ -643,8 +651,8 @@ private fun LogActivityDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onLog(selectedType, duration, stepsText.toIntOrNull(), overrideText.toIntOrNull()) },
-                enabled = duration > 0
+                onClick = { onLog(selectedType, duration, steps, override) },
+                enabled = activityInputsValid
             ) { Text("Log") }
         },
         dismissButton = {

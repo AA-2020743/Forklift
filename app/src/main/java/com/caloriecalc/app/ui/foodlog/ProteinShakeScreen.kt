@@ -116,7 +116,10 @@ fun ProteinShakeScreen(
     val totalCarbs = powderC + milkC
     val totalProtein = powderP + milkP
 
-    val isValid = name.isNotBlank() && powderCalories.toDoubleOrNull() != null &&
+    val powderValuesValid = listOf(powderProtein, powderFat, powderCarbs).all(::isNonNegativeNumberOrBlank)
+    val isValid = name.isNotBlank() &&
+        powderCalories.toDoubleOrNull()?.let { it.isFinite() && it >= 0.0 } == true &&
+        powderValuesValid &&
         (liquid == ShakeLiquid.WATER || (milk != null && milkGrams > 0))
 
     Scaffold(
@@ -308,7 +311,10 @@ fun ProteinShakeScreen(
                                             showCreateMilkForm = false
                                         }
                                     },
-                                    enabled = newMilkCalories.toDoubleOrNull() != null,
+                                     enabled = newMilkCalories.toDoubleOrNull()
+                                         ?.let { it.isFinite() && it >= 0.0 } == true &&
+                                         listOf(newMilkProtein, newMilkFat, newMilkCarbs)
+                                             .all(::isNonNegativeNumberOrBlank),
                                     modifier = Modifier.fillMaxWidth()
                                 ) { Text("Create & select") }
                             }

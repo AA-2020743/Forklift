@@ -148,7 +148,7 @@ fun WeightScreen() {
                                         weightText = ""
                                     }
                                 },
-                                enabled = weightText.toDoubleOrNull() != null
+                                enabled = weightText.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true
                             ) {
                                 Text("Log")
                             }
@@ -297,7 +297,7 @@ fun WeightScreen() {
                 TextButton(onClick = {
                     editText.toDoubleOrNull()?.let { viewModel.logWeightForDay(currentEditingLog.epochDay, it) }
                     editingLog = null
-                }) { Text("Save") }
+                }, enabled = editText.toDoubleOrNull()?.let { it.isFinite() && it > 0.0 } == true) { Text("Save") }
             },
             dismissButton = {
                 TextButton(onClick = { editingLog = null }) { Text("Cancel") }
@@ -320,6 +320,10 @@ fun WeightScreen() {
             var thighsText by remember { mutableStateOf(todayMeasurement?.thighsCm?.toString() ?: "") }
             var hipsText by remember { mutableStateOf(todayMeasurement?.hipsCm?.toString() ?: "") }
             var neckText by remember { mutableStateOf(todayMeasurement?.neckCm?.toString() ?: "") }
+            val measurementValues = listOf(waistText, chestText, armsText, thighsText, hipsText, neckText)
+            val measurementValid = measurementValues.any { it.isNotBlank() } && measurementValues.all {
+                it.isBlank() || it.toDoubleOrNull()?.let { value -> value.isFinite() && value > 0.0 } == true
+            }
 
             AlertDialog(
                 onDismissRequest = { showMeasurementDialog = false },
@@ -350,7 +354,7 @@ fun WeightScreen() {
                             )
                         }
                         showMeasurementDialog = false
-                    }) { Text("Save") }
+                    }, enabled = measurementValid) { Text("Save") }
                 },
                 dismissButton = {
                     TextButton(onClick = {

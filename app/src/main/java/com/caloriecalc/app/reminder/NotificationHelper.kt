@@ -22,25 +22,23 @@ object NotificationHelper {
     private const val PROTEIN_GAP_NOTIFICATION_ID = 1003
 
     fun createChannels(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                WEIGHT_REMINDER_CHANNEL_ID,
-                "Weight reminders",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Daily reminder to log your body weight"
-            }
-            val proteinChannel = NotificationChannel(
-                PROTEIN_REMINDER_CHANNEL_ID,
-                "Protein spacing",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Nudges when it's been a while since your last serving of protein"
-            }
-            context.getSystemService(NotificationManager::class.java)?.apply {
-                createNotificationChannel(channel)
-                createNotificationChannel(proteinChannel)
-            }
+        val channel = NotificationChannel(
+            WEIGHT_REMINDER_CHANNEL_ID,
+            "Weight reminders",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Daily reminder to log your body weight"
+        }
+        val proteinChannel = NotificationChannel(
+            PROTEIN_REMINDER_CHANNEL_ID,
+            "Protein spacing",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Nudges when it's been a while since your last serving of protein"
+        }
+        context.getSystemService(NotificationManager::class.java)?.apply {
+            createNotificationChannel(channel)
+            createNotificationChannel(proteinChannel)
         }
     }
 
@@ -62,6 +60,10 @@ object NotificationHelper {
             priority = NotificationCompat.PRIORITY_DEFAULT,
             channelId = PROTEIN_REMINDER_CHANNEL_ID
         )
+    }
+
+    fun clearProteinGapReminder(context: Context) {
+        NotificationManagerCompat.from(context).cancel(PROTEIN_GAP_NOTIFICATION_ID)
     }
 
     fun showWeightReminder(context: Context) {
@@ -115,6 +117,7 @@ object NotificationHelper {
             .setContentTitle(title)
             .setContentText(body)
             .setPriority(priority)
+            .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()

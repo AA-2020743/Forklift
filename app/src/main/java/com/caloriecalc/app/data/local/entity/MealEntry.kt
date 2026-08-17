@@ -35,6 +35,7 @@ data class MealEntry(
     val mealSlotId: Long,
     /** Day this entry belongs to, as an epoch-day (days since 1970-01-01), independent of time zone drift. */
     val epochDay: Long,
+    /** Consumed-at instant; all entries in a meal/day are kept aligned to the shared meal time. */
     val loggedAtEpochMillis: Long,
     val grams: Double,
     val calories: Double,

@@ -16,7 +16,9 @@ sealed class Screen(val route: String) {
     data object Workouts : Screen("workouts")
     data object Weight : Screen("weight")
     data object Profile : Screen("profile")
-    data object Micronutrients : Screen("micronutrients")
+    data object Micronutrients : Screen("micronutrients/{epochDay}") {
+        fun createRoute(epochDay: Long) = "micronutrients/$epochDay"
+    }
 
     data object MealLog : Screen("meal_log/{mealSlotId}/{epochDay}") {
         fun createRoute(mealSlotId: Long, epochDay: Long) = "meal_log/$mealSlotId/$epochDay"

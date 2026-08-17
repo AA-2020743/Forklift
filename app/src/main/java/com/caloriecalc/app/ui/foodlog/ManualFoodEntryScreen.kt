@@ -81,7 +81,14 @@ fun ManualFoodEntryScreen(
     }
 
     val servingGramsValue = servingGrams.toDoubleOrNull()
-    val isValid = name.isNotBlank() && calories.toDoubleOrNull() != null &&
+    val caloriesValue = calories.toDoubleOrNull()
+    val macrosValid = listOf(protein, fat, carbs).all(::isNonNegativeNumberOrBlank)
+    val waterValid = waterContent.isBlank() ||
+        waterContent.toDoubleOrNull()?.let { it.isFinite() && it in 0.0..100.0 } == true
+    val servingSizeValid = servingGrams.isBlank() || isPositiveNumber(servingGrams)
+    val isValid = name.isNotBlank() && caloriesValue?.let { it.isFinite() && it >= 0.0 } == true &&
+        macrosValid && waterValid && servingSizeValid &&
+        microDraft.isValid() &&
         (basis == MacroBasis.PER_100G || (servingGramsValue != null && servingGramsValue > 0))
 
     Scaffold(
