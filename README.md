@@ -4,15 +4,6 @@ An Android app for tracking calories/macros and lifting sessions together, with
 visual thresholds for protein/fat, muscle-coverage exercise suggestions, and a
 weight-vs-intake correlation view.
 
-## Screenshots
-
-| Dashboard | Shared meal time | Food logging | Profile and reminders |
-| --- | --- | --- | --- |
-| ![Forklift dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png?v=d92c6c9) | ![Shared meal time control](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-time.png?v=d92c6c9) | ![Food logging screen](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=d92c6c9) | ![Profile and reminder settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png?v=d92c6c9) |
-
-The screenshots show the responsive Compose UI on a Pixel emulator, including the
-dashboard, one shared time for a meal/day, food logging, and profile controls.
-
 ## Features
 
 - **Barcode scanning** (CameraX + ML Kit) looked up against the free
@@ -37,6 +28,15 @@ dashboard, one shared time for a meal/day, food logging, and profile controls.
   trend view that estimates your *actual* maintenance calories from logged
   weight + intake, comparing it to your calorie target and suggesting
   adjustments.
+
+## Screenshots
+
+The screenshots below show the populated dashboard, shared meal-time workflow,
+food logging, and profile/reminder controls on a Pixel emulator.
+
+| Dashboard | Shared meal time | Food logging | Profile and reminders |
+| --- | --- | --- | --- |
+| ![Forklift dashboard](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/dashboard.png?v=a221ffa) | ![Shared meal time control](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/meal-time.png?v=a221ffa) | ![Food logging screen](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=a221ffa) | ![Profile and reminder settings](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/profile.png?v=a221ffa) |
 
 ## Architecture
 
