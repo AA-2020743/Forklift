@@ -35,8 +35,8 @@ class CalorieCalcApp : Application() {
                 )
             }
             if (profile.proteinReminderEnabled) {
-                appContainer.reminderScheduler.scheduleProteinGapCheck(
-                    ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES
+                appContainer.reminderScheduler.ensureProteinGapCheck(
+                    ReminderScheduler.PROTEIN_INITIAL_CHECK_DELAY_MINUTES
                 )
             }
         }

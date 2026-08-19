@@ -36,7 +36,7 @@ class ProfileViewModel(
                 reminderScheduler.cancelWeightReminder()
             }
             if (profile.proteinReminderEnabled) {
-                reminderScheduler.scheduleProteinGapCheck(ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES)
+                reminderScheduler.scheduleProteinGapCheck(ReminderScheduler.PROTEIN_INITIAL_CHECK_DELAY_MINUTES)
             } else {
                 reminderScheduler.cancelProteinGapCheck()
             }

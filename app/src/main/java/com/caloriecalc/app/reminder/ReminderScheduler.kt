@@ -65,17 +65,26 @@ class ReminderScheduler(private val context: Context) {
 
     /**
      * Queues the next protein-spacing check. Like the weight reminder this is a self-chaining
-     * one-time job rather than periodic work, so ProteinGapWorker can vary the next delay —
-     * normally hourly, but jumping straight to wake-up time when it runs during sleep.
+     * one-time job rather than periodic work, so ProteinGapWorker can target the configured
+     * meal-time deadline, recheck hourly once overdue, or jump to wake-up during sleep.
      */
     fun scheduleProteinGapCheck(delayMinutes: Long) {
+        enqueueProteinGapCheck(delayMinutes, ExistingWorkPolicy.REPLACE)
+    }
+
+    /** Starts monitoring on app launch without postponing a check that is already queued. */
+    fun ensureProteinGapCheck(delayMinutes: Long) {
+        enqueueProteinGapCheck(delayMinutes, ExistingWorkPolicy.KEEP)
+    }
+
+    private fun enqueueProteinGapCheck(delayMinutes: Long, policy: ExistingWorkPolicy) {
         val request = OneTimeWorkRequestBuilder<ProteinGapWorker>()
-            .setInitialDelay(delayMinutes, TimeUnit.MINUTES)
+            .setInitialDelay(delayMinutes.coerceAtLeast(1), TimeUnit.MINUTES)
             .build()
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             PROTEIN_WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
+            policy,
             request
         )
     }
@@ -95,5 +104,8 @@ class ReminderScheduler(private val context: Context) {
 
         /** How often to re-evaluate the protein gap while awake. */
         const val PROTEIN_CHECK_INTERVAL_MINUTES = 60L
+
+        /** Quickly calculates the real due time after startup or a settings change. */
+        const val PROTEIN_INITIAL_CHECK_DELAY_MINUTES = 1L
     }
 }

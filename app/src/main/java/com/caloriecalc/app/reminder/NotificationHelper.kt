@@ -47,9 +47,16 @@ object NotificationHelper {
      * limit. Copy names the actual gap and the meal it's nearest to, so it reads as information
      * rather than nagging.
      */
-    fun showProteinGapReminder(context: Context, hoursSinceLastProtein: Int, nextMealName: String?) {
+    fun showProteinGapReminder(context: Context, minutesSinceLastProtein: Long, nextMealName: String?) {
+        val hours = minutesSinceLastProtein / 60
+        val minutes = minutesSinceLastProtein % 60
+        val elapsed = when {
+            hours == 0L -> "${minutes}m"
+            minutes == 0L -> "${hours}h"
+            else -> "${hours}h ${minutes}m"
+        }
         val body = buildString {
-            append("It's been about ${hoursSinceLastProtein}h since your last solid hit of protein.")
+            append("It's been about $elapsed since your last qualifying protein meal.")
             if (nextMealName != null) append(" $nextMealName is around now — good moment to top up.")
         }
         notifyWeight(

@@ -49,10 +49,10 @@ class NutritionLogRepository(
     fun hydrationInRange(fromEpochDay: Long, toEpochDay: Long): Flow<List<DayHydration>> =
         mealEntryDao.getHydrationInRange(fromEpochDay, toEpochDay)
 
-    suspend fun lastProteinEntry(
+    suspend fun lastProteinMealTime(
         minProteinGrams: Double,
         notAfterEpochMillis: Long = System.currentTimeMillis()
-    ): MealEntry? = mealEntryDao.getLastProteinEntry(minProteinGrams, notAfterEpochMillis)
+    ): Long? = mealEntryDao.getLastProteinMealTime(minProteinGrams, notAfterEpochMillis)
 
     suspend fun logFood(
         food: FoodItem,

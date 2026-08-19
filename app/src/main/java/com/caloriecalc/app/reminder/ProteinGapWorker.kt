@@ -9,7 +9,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 
 /**
@@ -22,8 +21,8 @@ import kotlinx.coroutines.flow.first
  * is the usual practical recommendation, which is what [proteinGapHours] defaults to.
  *
  * Two things keep this from becoming a nuisance:
- *  - Only entries of at least [proteinDoseGrams] reset the clock, so a coffee or a piece of fruit
- *    doesn't count as "fed" and, conversely, doesn't trigger a nudge on its own.
+ *  - Only meals whose combined entries reach [proteinDoseGrams] reset the clock, so a coffee or
+ *    piece of fruit doesn't count as "fed", while several foods in one meal count together.
  *  - Nothing fires outside the waking window. When the check lands mid-sleep the worker doesn't
  *    just skip it — it re-arms itself for the moment the user is due to wake, so the first
  *    morning check happens on time instead of waiting for the next hourly tick.
@@ -36,7 +35,10 @@ class ProteinGapWorker(
     override suspend fun doWork(): Result {
         val container = (applicationContext as CalorieCalcApp).appContainer
         val profile = container.profileRepository.getProfile()
-        if (!profile.proteinReminderEnabled) return Result.success()
+        if (!profile.proteinReminderEnabled) {
+            NotificationHelper.clearProteinGapReminder(applicationContext)
+            return Result.success()
+        }
 
         val now = LocalTime.now()
         if (!SleepWindow.isAwake(profile, now)) {
@@ -47,16 +49,18 @@ class ProteinGapWorker(
         }
 
         val nowMillis = System.currentTimeMillis()
-        val lastEntry = container.nutritionLogRepository.lastProteinEntry(profile.proteinDoseGrams, nowMillis)
-        val gapMillis = lastEntry?.let { nowMillis - it.loggedAtEpochMillis }
-        val gapHours = gapMillis?.let { it / 3_600_000.0 }
+        val lastMealMillis = container.nutritionLogRepository.lastProteinMealTime(
+            profile.proteinDoseGrams,
+            nowMillis
+        )
+        val timing = calculateProteinGapTiming(nowMillis, lastMealMillis, profile.proteinGapHours)
 
         // With no qualifying entry ever logged there's no gap to measure — stay quiet rather
         // than nagging a brand-new user who hasn't started logging yet.
-        if (gapHours != null && gapHours >= profile.proteinGapHours) {
+        if (timing.isDue) {
             NotificationHelper.showProteinGapReminder(
                 context = applicationContext,
-                hoursSinceLastProtein = gapHours.roundToInt(),
+                minutesSinceLastProtein = timing.elapsedMinutes ?: 0,
                 nextMealName = nearestMealName(container, now)
             )
         } else {
@@ -65,7 +69,7 @@ class ProteinGapWorker(
             NotificationHelper.clearProteinGapReminder(applicationContext)
         }
 
-        container.reminderScheduler.scheduleProteinGapCheck(ReminderScheduler.PROTEIN_CHECK_INTERVAL_MINUTES)
+        container.reminderScheduler.scheduleProteinGapCheck(timing.nextDelayMinutes)
         return Result.success()
     }
 

@@ -87,15 +87,17 @@ interface MealEntryDao {
     @Query("SELECT * FROM meal_entries WHERE foodItemId = :foodItemId")
     suspend fun getEntriesForFood(foodItemId: Long): List<MealEntry>
 
-    /** The most recent entry that delivered at least [minProteinGrams] of protein. */
+    /** The most recent meal whose combined foods delivered at least [minProteinGrams]. */
     @Query(
         """
-        SELECT * FROM meal_entries
-        WHERE protein >= :minProteinGrams AND loggedAtEpochMillis <= :notAfterEpochMillis
-        ORDER BY loggedAtEpochMillis DESC LIMIT 1
+        SELECT MAX(loggedAtEpochMillis) FROM meal_entries
+        WHERE loggedAtEpochMillis <= :notAfterEpochMillis
+        GROUP BY epochDay, mealSlotId
+        HAVING SUM(protein) >= :minProteinGrams
+        ORDER BY MAX(loggedAtEpochMillis) DESC LIMIT 1
         """
     )
-    suspend fun getLastProteinEntry(minProteinGrams: Double, notAfterEpochMillis: Long): MealEntry?
+    suspend fun getLastProteinMealTime(minProteinGrams: Double, notAfterEpochMillis: Long): Long?
 
     @Query(
         """

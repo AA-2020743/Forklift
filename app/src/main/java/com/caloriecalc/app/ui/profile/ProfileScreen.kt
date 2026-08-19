@@ -600,7 +600,7 @@ fun ProfileScreen() {
                                 OutlinedTextField(
                                     value = proteinGapText,
                                     onValueChange = { proteinGapText = it },
-                                    label = { Text("Max gap (h)") },
+                                    label = { Text("Gap after meal (h)") },
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                                     modifier = Modifier.weight(1f)
                                 )
@@ -612,6 +612,11 @@ fun ProfileScreen() {
                                     modifier = Modifier.weight(1f)
                                 )
                             }
+                            Text(
+                                "The timer starts from the consumed time of the latest meal whose combined foods reach the dose.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
