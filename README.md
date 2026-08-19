@@ -20,7 +20,7 @@ These Pixel emulator captures use deterministic demo data rather than real user 
 
 | Food logging options | Lifting coverage and history |
 | --- | --- |
-| ![Forklift recent foods and logging options](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=20260818-demo) | ![Forklift muscle coverage suggestions](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/lifting.png?v=20260818-demo) |
+| ![Forklift recent foods and logging options](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/add-food.png?v=20260819-icons) | ![Forklift muscle coverage suggestions](https://raw.githubusercontent.com/AA-2020743/Forklift/main/docs/images/lifting.png?v=20260818-demo) |
 
 | Weight and maintenance insight | Profile and reminders |
 | --- | --- |

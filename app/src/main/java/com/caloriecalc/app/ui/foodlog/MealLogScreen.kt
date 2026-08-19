@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -106,15 +107,18 @@ fun MealLogScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         FoodIconBadge(
                             icon = mealSlotIcon(mealName),
                             accentColor = mealSlotAccentColor(mealName),
                             size = 30.dp
                         )
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(mealName)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(mealName, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (!isToday) {
                                 Text(
                                     text = LocalDate.ofEpochDay(epochDay)
@@ -167,7 +171,10 @@ fun MealLogScreen(
                 ) {
                     Text(
                         if (isToday) "Today's meal time" else "Meal time for this day",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -211,7 +218,10 @@ fun MealLogScreen(
                         ) {
                             Text(
                                 if (isToday) "Today's meal time" else "Meal time for this day",
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f)
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
@@ -234,21 +244,26 @@ fun MealLogScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                FoodIconBadge(
-                                    icon = foodItemIcon(item.food.name),
-                                    accentColor = stableAccentColor(item.food.name),
-                                    size = 36.dp
+                            FoodIconBadge(
+                                icon = foodItemIcon(item.food.name),
+                                accentColor = stableAccentColor(item.food.name),
+                                size = 36.dp
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = item.food.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(item.food.name, style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        text = "${formatGrams(item.entry.grams)} g · ${item.entry.calories.roundToInt()} kcal",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Text(
+                                    text = "${formatGrams(item.entry.grams)} g · ${item.entry.calories.roundToInt()} kcal",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                             Row {
                                 IconButton(onClick = { editingEntry = item }) {

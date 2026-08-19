@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.caloriecalc.app.domain.findFoodEnergyMismatch
+import kotlin.math.roundToInt
 
 /** Whether the macro values a user is typing describe 100g of the food or one whole serving. */
 enum class MacroBasis { PER_100G, PER_SERVING }
@@ -90,6 +92,13 @@ fun FoodMacroFields(
     Spacer(modifier = Modifier.height(16.dp))
 
     val unitSuffix = if (basis == MacroBasis.PER_100G) "100g" else "serving"
+    val basisLabel = if (basis == MacroBasis.PER_100G) "100 g" else "serving"
+    val energyMismatch = findFoodEnergyMismatch(
+        calories.toDoubleOrNull(),
+        protein.toMacroValueOrNull(),
+        fat.toMacroValueOrNull(),
+        carbs.toMacroValueOrNull()
+    )
 
     if (basis == MacroBasis.PER_SERVING) {
         OutlinedTextField(
@@ -113,6 +122,7 @@ fun FoodMacroFields(
         value = calories,
         onValueChange = onCaloriesChange,
         label = { Text("Calories / $unitSuffix") },
+        isError = energyMismatch != null,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth()
     )
@@ -139,6 +149,14 @@ fun FoodMacroFields(
         label = { Text("Protein g / $unitSuffix") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         modifier = Modifier.fillMaxWidth()
+    )
+
+    CalorieMacroMismatchWarning(
+        calories = calories.toDoubleOrNull(),
+        protein = protein.toMacroValueOrNull(),
+        fat = fat.toMacroValueOrNull(),
+        carbs = carbs.toMacroValueOrNull(),
+        basisLabel = basisLabel
     )
 
     if (basis == MacroBasis.PER_100G) {
@@ -170,4 +188,24 @@ fun FoodMacroFields(
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+private fun String.toMacroValueOrNull(): Double? = if (isBlank()) 0.0 else toDoubleOrNull()
+
+@Composable
+fun CalorieMacroMismatchWarning(
+    calories: Double?,
+    protein: Double?,
+    fat: Double?,
+    carbs: Double?,
+    basisLabel: String = "100 g"
+) {
+    val mismatch = findFoodEnergyMismatch(calories, protein, fat, carbs) ?: return
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = "Nutrition mismatch: the macros imply about ${mismatch.macroCalories.roundToInt()} kcal per " +
+            "$basisLabel, but ${mismatch.statedCalories.roundToInt()} kcal is listed. Review these values before logging.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error
+    )
 }

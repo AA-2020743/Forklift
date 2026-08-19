@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.ui.components.FoodIconBadge
 import com.caloriecalc.app.ui.components.foodItemIcon
@@ -125,11 +126,18 @@ fun MacroBreakdownSheet(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(item.foodName, fontWeight = FontWeight.Medium)
+                            Text(
+                                text = item.foodName,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
                             Text(
                                 text = "${item.mealName} · ${formatGrams(item.grams)} g",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         Column(horizontalAlignment = Alignment.End) {

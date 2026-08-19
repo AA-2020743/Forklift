@@ -20,6 +20,9 @@ interface FoodDao {
     @Query("SELECT * FROM food_items WHERE id = :id")
     suspend fun getById(id: Long): FoodItem?
 
+    @Query("SELECT * FROM food_items WHERE id = :id")
+    fun observeById(id: Long): Flow<FoodItem?>
+
     @Query("SELECT * FROM food_items")
     suspend fun getAll(): List<FoodItem>
 

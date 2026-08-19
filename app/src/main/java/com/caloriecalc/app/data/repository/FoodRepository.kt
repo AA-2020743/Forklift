@@ -27,6 +27,7 @@ class FoodRepository(
     fun favorites(): Flow<List<FoodItem>> = foodDao.getFavorites()
 
     suspend fun getById(id: Long): FoodItem? = foodDao.getById(id)
+    fun observeById(id: Long): Flow<FoodItem?> = foodDao.observeById(id)
 
     suspend fun setFavorite(id: Long, isFavorite: Boolean) = foodDao.setFavorite(id, isFavorite)
 

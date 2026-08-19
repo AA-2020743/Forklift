@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.Micronutrients
@@ -233,8 +234,13 @@ fun ProteinShakeScreen(
                                     size = 28.dp
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(food.name, style = MaterialTheme.typography.bodyMedium)
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = food.name,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                     Text(
                                         "${food.caloriesPer100g.roundToInt()} kcal / 100g",
                                         style = MaterialTheme.typography.labelSmall,

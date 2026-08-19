@@ -14,14 +14,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Blender
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -29,8 +34,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -109,7 +113,6 @@ fun AddFoodScreen(
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showQuickAddDialog by remember { mutableStateOf(false) }
-    var showFoodActionsMenu by remember { mutableStateOf(false) }
     var applyingTemplateId by remember { mutableStateOf<Long?>(null) }
     val scope = rememberCoroutineScope()
 
@@ -128,69 +131,45 @@ fun AddFoodScreen(
                         val base = if (isQuickAdd) "Scan or add food" else "Add to $mealName"
                         Text(
                             if (isToday) base
-                            else "$base — ${LocalDate.ofEpochDay(epochDay).format(DateTimeFormatter.ofPattern("EEE, MMM d"))}"
+                            else "$base — ${LocalDate.ofEpochDay(epochDay).format(DateTimeFormatter.ofPattern("EEE, MMM d"))}",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = { showFoodActionsMenu = true }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = "More food options")
-                        }
-                        DropdownMenu(
-                            expanded = showFoodActionsMenu,
-                            onDismissRequest = { showFoodActionsMenu = false }
-                        ) {
-                            if (!isQuickAdd) {
-                                DropdownMenuItem(
-                                    text = { Text("Estimate from photo") },
-                                    onClick = {
-                                        showFoodActionsMenu = false
-                                        onPhotoEstimate(mealSlotId)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Quick add calories") },
-                                    onClick = {
-                                        showFoodActionsMenu = false
-                                        showQuickAddDialog = true
-                                    }
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text("Scan barcode") },
-                                onClick = {
-                                    showFoodActionsMenu = false
-                                    onScanBarcode(mealSlotId)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Create protein shake") },
-                                onClick = {
-                                    showFoodActionsMenu = false
-                                    onCreateProteinShake(mealSlotId)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Build a recipe") },
-                                onClick = {
-                                    showFoodActionsMenu = false
-                                    onCreateRecipe(mealSlotId)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Enter manually") },
-                                onClick = {
-                                    showFoodActionsMenu = false
-                                    onManualEntry(mealSlotId)
-                                }
-                            )
-                        }
                     }
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!isQuickAdd) {
+                        IconButton(onClick = { onPhotoEstimate(mealSlotId) }) {
+                            Icon(Icons.Filled.CameraAlt, contentDescription = "Estimate from photo")
+                        }
+                        IconButton(onClick = { showQuickAddDialog = true }) {
+                            Icon(Icons.Filled.Bolt, contentDescription = "Quick add calories")
+                        }
+                    }
+                    IconButton(onClick = { onScanBarcode(mealSlotId) }) {
+                        Icon(Icons.Filled.QrCodeScanner, contentDescription = "Scan barcode")
+                    }
+                    IconButton(onClick = { onCreateProteinShake(mealSlotId) }) {
+                        Icon(Icons.Filled.Blender, contentDescription = "Create protein shake")
+                    }
+                    IconButton(onClick = { onCreateRecipe(mealSlotId) }) {
+                        Icon(Icons.Filled.DinnerDining, contentDescription = "Build a recipe")
+                    }
+                    IconButton(onClick = { onManualEntry(mealSlotId) }) {
+                        Icon(Icons.Filled.Add, contentDescription = "Enter manually")
+                    }
+                }
                 OutlinedTextField(
                     value = query,
                     onValueChange = viewModel::onQueryChange,
@@ -489,7 +468,12 @@ private fun TemplatesTabContent(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(template.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = template.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Text(
                             text = "${template.itemCount} item${if (template.itemCount == 1) "" else "s"}",
                             style = MaterialTheme.typography.bodyMedium,
@@ -522,12 +506,19 @@ private fun FoodRow(
             FoodIconBadge(icon = foodItemIcon(food.name), accentColor = stableAccentColor(food.name))
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(food.name, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = food.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
                 val brandPrefix = food.brand?.let { "$it · " } ?: ""
                 Text(
                     text = "$brandPrefix${food.caloriesPer100g.toInt()} kcal / 100g",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
             if (food.id != 0L) {

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,9 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.repository.gramsForServings
 import com.caloriecalc.app.di.rememberAppContainer
 import com.caloriecalc.app.ui.components.formatGrams
@@ -60,16 +61,15 @@ fun QuantityScreen(
     mealSlotId: Long,
     epochDay: Long,
     onBack: () -> Unit,
+    onEditFood: (Long) -> Unit,
     onLogged: () -> Unit
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
     val isQuickAdd = mealSlotId == QUICK_ADD_MEAL_SLOT_ID
 
-    var food by remember { mutableStateOf<FoodItem?>(null) }
-    LaunchedEffect(foodId) {
-        food = container.foodRepository.getById(foodId)
-    }
+    val food by container.foodRepository.observeById(foodId)
+        .collectAsStateWithLifecycle(initialValue = null)
 
     var mealName by remember { mutableStateOf("meal") }
     LaunchedEffect(mealSlotId) {
@@ -146,9 +146,16 @@ fun QuantityScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(currentFood.name) },
+                title = {
+                    Text(currentFood.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                },
+                actions = {
+                    IconButton(onClick = { onEditFood(currentFood.id) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edit food details")
+                    }
                 }
             )
         }
@@ -216,6 +223,12 @@ fun QuantityScreen(
                     NutrientRow("Fat", fat, "g")
                     NutrientRow("Carbs", carbs, "g")
                     NutrientRow("Protein", protein, "g")
+                    CalorieMacroMismatchWarning(
+                        calories = currentFood.caloriesPer100g,
+                        protein = currentFood.proteinPer100g,
+                        fat = currentFood.fatPer100g,
+                        carbs = currentFood.carbsPer100g
+                    )
                 }
             }
 

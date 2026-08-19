@@ -86,7 +86,7 @@ fun AppNavHost() {
                         navController.navigate(Screen.Micronutrients.createRoute(epochDay))
                     },
                     onQuickAdd = { epochDay ->
-                        navController.navigate(Screen.AddFood.createRoute(QUICK_ADD_MEAL_SLOT_ID, epochDay))
+                        navController.navigate(Screen.BarcodeScan.createRoute(QUICK_ADD_MEAL_SLOT_ID, epochDay))
                     },
                     onOpenTrends = { navController.navigate(Screen.WeeklySummary.route) }
                 )
@@ -267,7 +267,13 @@ fun AppNavHost() {
                     mealSlotId = mealSlotId,
                     onBack = { navController.popBackStack() },
                     onManualEntry = { navController.navigate(Screen.ManualFoodEntry.createRoute(it, epochDay)) },
-                    onSearchByName = { navController.popBackStack() },
+                    onOtherOptions = { mid ->
+                        val addFoodRoute = Screen.AddFood.createRoute(mid, epochDay)
+                        if (!navController.popBackStack(addFoodRoute, false)) {
+                            navController.popBackStack()
+                            navController.navigate(addFoodRoute)
+                        }
+                    },
                     onFoodResolved = { foodId, mid -> navController.navigate(Screen.Quantity.createRoute(foodId, mid, epochDay)) }
                 )
             }
@@ -304,6 +310,7 @@ fun AppNavHost() {
                     mealSlotId = mealSlotId,
                     epochDay = epochDay,
                     onBack = { navController.popBackStack() },
+                    onEditFood = { navController.navigate(Screen.EditFood.createRoute(it)) },
                     onLogged = {
                         if (mealSlotId == QUICK_ADD_MEAL_SLOT_ID) {
                             navController.popBackStack(Screen.Dashboard.route, false)

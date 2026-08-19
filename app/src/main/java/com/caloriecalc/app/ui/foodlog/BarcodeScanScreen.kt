@@ -11,14 +11,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,7 +48,7 @@ fun BarcodeScanScreen(
     mealSlotId: Long,
     onBack: () -> Unit,
     onManualEntry: (Long) -> Unit,
-    onSearchByName: (Long) -> Unit,
+    onOtherOptions: (Long) -> Unit,
     onFoodResolved: (foodId: Long, mealSlotId: Long) -> Unit
 ) {
     val container = rememberAppContainer()
@@ -126,6 +129,18 @@ fun BarcodeScanScreen(
                 }
             }
 
+            OutlinedButton(
+                onClick = { onOtherOptions(mealSlotId) },
+                enabled = !isLookingUp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(24.dp)
+            ) {
+                Icon(Icons.Filled.MoreHoriz, contentDescription = null)
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(8.dp))
+                Text("Other ways to add")
+            }
+
             val currentNotFound = notFoundBarcode
             if (currentNotFound != null) {
                 AlertDialog(
@@ -142,10 +157,10 @@ fun BarcodeScanScreen(
                             TextButton(
                                 onClick = {
                                     notFoundBarcode = null
-                                    onSearchByName(mealSlotId)
+                                    onOtherOptions(mealSlotId)
                                 },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Search by name instead") }
+                            ) { Text("Other ways to add") }
                         }
                     },
                     confirmButton = {
