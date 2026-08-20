@@ -31,7 +31,18 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-data class MealSummary(val mealSlot: MealSlot, val calories: Int, val proteinGrams: Double, val itemCount: Int)
+data class MealSummary(
+    val mealSlot: MealSlot,
+    val calories: Int,
+    val proteinGrams: Double,
+    val itemCount: Int,
+    val consumedAtEpochMillis: Long?
+)
+
+internal fun orderMealSummaries(summaries: List<MealSummary>): List<MealSummary> =
+    summaries.sortedWith(compareBy<MealSummary> { it.consumedAtEpochMillis == null }
+        .thenBy { it.consumedAtEpochMillis }
+        .thenBy { it.mealSlot.sortOrder })
 
 /** A unified row for the day's "Activity" feed: either a lifting session or a quick-logged
  * cardio/misc activity, so both can render in one list. */
@@ -73,6 +84,7 @@ private data class DayScopedBundle(
     val water: WaterLog?,
     val totals: DayMacroTotals,
     val entries: List<MealEntryWithFood>,
+    val mealTimesBySlotId: Map<Long, Long>,
     val hydrationFromFoodMl: Double
 )
 
@@ -90,21 +102,26 @@ class DashboardViewModel(
     private val selectedEpochDay = MutableStateFlow(today)
 
     private val dayScoped = selectedEpochDay.flatMapLatest { day ->
-        // Water and food-derived hydration are paired first: `combine` tops out at five typed
-        // sources, and these two are the pair that always get read together anyway.
+        // These related sources are paired first because `combine` tops out at five typed sources.
         val hydration = combine(
             waterRepository.observeForDay(day),
             nutritionLogRepository.hydrationForDay(day)
         ) { water, fromFood -> water to fromFood }
+        val nutrition = combine(
+            nutritionLogRepository.totalsForDay(day),
+            nutritionLogRepository.entriesForDay(day),
+            nutritionLogRepository.mealTimesForDay(day)
+        ) { totals, entries, mealTimes ->
+            Triple(totals, entries, mealTimes.associate { it.mealSlotId to it.consumedAtEpochMillis })
+        }
 
         combine(
             workoutRepository.observeSessionsInRange(day, day),
             activityRepository.observeForDay(day),
             hydration,
-            nutritionLogRepository.totalsForDay(day),
-            nutritionLogRepository.entriesForDay(day)
-        ) { sessions, activities, (water, fromFood), totals, entries ->
-            DayScopedBundle(sessions, activities, water, totals, entries, fromFood)
+            nutrition
+        ) { sessions, activities, (water, fromFood), (totals, entries, mealTimesBySlotId) ->
+            DayScopedBundle(sessions, activities, water, totals, entries, mealTimesBySlotId, fromFood)
         }
     }
 
@@ -114,7 +131,7 @@ class DashboardViewModel(
         dayScoped,
         selectedEpochDay
     ) { profile, mealSlots, bundle, day ->
-        val (sessions, activities, water, totals, entries, hydrationFromFood) = bundle
+        val (sessions, activities, water, totals, entries, mealTimesBySlotId, hydrationFromFood) = bundle
         val targets = NutritionCalculator.computeTargets(profile)
         val mealSummaries = mealSlots.map { slot ->
             val mealEntries = entries.filter { it.entry.mealSlotId == slot.id }
@@ -122,9 +139,11 @@ class DashboardViewModel(
                 mealSlot = slot,
                 calories = mealEntries.sumOf { it.entry.calories }.roundToInt(),
                 proteinGrams = mealEntries.sumOf { it.entry.protein },
-                itemCount = mealEntries.size
+                itemCount = mealEntries.size,
+                consumedAtEpochMillis = mealTimesBySlotId[slot.id]
+                    ?: mealEntries.minOfOrNull { it.entry.loggedAtEpochMillis }
             )
-        }
+        }.let(::orderMealSummaries)
 
         val mealNameById = mealSlots.associate { it.id to it.name }
         fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =

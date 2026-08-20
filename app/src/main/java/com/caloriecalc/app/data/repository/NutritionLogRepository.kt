@@ -35,6 +35,8 @@ class NutritionLogRepository(
     fun observeMealTime(epochDay: Long, mealSlotId: Long): Flow<Long?> =
         mealTimeDao.observe(epochDay, mealSlotId).map { it?.consumedAtEpochMillis }
 
+    fun mealTimesForDay(epochDay: Long): Flow<List<MealTime>> = mealTimeDao.observeForDay(epochDay)
+
     suspend fun getMealTime(epochDay: Long, mealSlotId: Long): Long? =
         mealTimeDao.get(epochDay, mealSlotId)?.consumedAtEpochMillis
 

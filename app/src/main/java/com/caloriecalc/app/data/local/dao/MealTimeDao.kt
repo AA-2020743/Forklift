@@ -16,6 +16,9 @@ interface MealTimeDao {
     @Query("SELECT * FROM meal_times WHERE epochDay = :epochDay AND mealSlotId = :mealSlotId")
     fun observe(epochDay: Long, mealSlotId: Long): Flow<MealTime?>
 
+    @Query("SELECT * FROM meal_times WHERE epochDay = :epochDay")
+    fun observeForDay(epochDay: Long): Flow<List<MealTime>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(mealTime: MealTime)
 }
