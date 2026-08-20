@@ -99,9 +99,8 @@ fun MealLogScreen(
     var showMealTimePicker by remember { mutableStateOf(false) }
     var showSaveTemplateDialog by remember { mutableStateOf(false) }
     val nowFallback = remember { LocalTime.now() }
-    val displayedMealTime = storedMealTime ?: mealSlot?.takeIf { it.hasTargetTime }?.let {
-        epochMillisForMealTime(epochDay, it.targetHour!!, it.targetMinute!!)
-    } ?: epochMillisForMealTime(epochDay, nowFallback.hour, nowFallback.minute)
+    val displayedMealTime = storedMealTime
+        ?: epochMillisForMealTime(epochDay, nowFallback.hour, nowFallback.minute)
 
     Scaffold(
         topBar = {

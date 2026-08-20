@@ -99,15 +99,10 @@ fun QuantityScreen(
         mealTimeLoaded = targetMealSlotId != null
     }
 
-    // The meal's "eaten at" time defaults to that meal slot's configured time of day, falling
-    // back to now when it has none set. It's adjustable and drives protein-spacing reminders.
-    val targetMealSlot = activeMealSlots.find { it.id == targetMealSlotId }
+    // A new meal starts at the current system time; changing it from the meal screen persists
+    // that time for the rest of the meal and drives protein-spacing reminders.
     val nowFallback = remember { LocalTime.now() }
     val mealTime = storedMealTime?.let { mealTimeParts(it) }
-        ?: targetMealSlot?.let { slot ->
-            if (slot.hasTargetTime) (slot.targetHour!! to slot.targetMinute!!)
-            else (nowFallback.hour to nowFallback.minute)
-        }
         ?: (nowFallback.hour to nowFallback.minute)
 
     val currentFood = food

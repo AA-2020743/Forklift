@@ -3,6 +3,8 @@ package com.caloriecalc.app.data.repository
 import com.caloriecalc.app.data.local.entity.MealSlot
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -10,12 +12,9 @@ import org.junit.Test
 class MealTimeDefaultsTest {
 
     @Test
-    fun `default time uses the meal slot time on a historical day`() {
-        val day = LocalDate.now().minusDays(2)
-        val result = defaultMealTime(
-            day.toEpochDay(),
-            MealSlot(name = "Lunch", sortOrder = 0, targetHour = 13, targetMinute = 15)
-        )
+    fun `default time uses the system time on the selected day`() {
+        val day = LocalDate.of(2026, 8, 16)
+        val result = defaultMealTime(day.toEpochDay(), LocalDateTime.of(day, LocalTime.of(13, 15)))
         val local = Instant.ofEpochMilli(result).atZone(ZoneId.systemDefault())
 
         assertEquals(day, local.toLocalDate())
@@ -40,16 +39,13 @@ class MealTimeDefaultsTest {
     }
 
     @Test
-    fun `default time keeps a configured future meal time today`() {
-        val today = LocalDate.now()
-        val result = defaultMealTime(
-            today.toEpochDay(),
-            MealSlot(name = "Lunch", sortOrder = 0, targetHour = 23, targetMinute = 59)
-        )
+    fun `default time ignores a meal slot configuration`() {
+        val today = LocalDate.of(2026, 8, 18)
+        val result = defaultMealTime(today.toEpochDay(), LocalDateTime.of(today, LocalTime.of(9, 42)))
         val local = Instant.ofEpochMilli(result).atZone(ZoneId.systemDefault())
 
         assertEquals(today, local.toLocalDate())
-        assertEquals(23, local.hour)
-        assertEquals(59, local.minute)
+        assertEquals(9, local.hour)
+        assertEquals(42, local.minute)
     }
 }
