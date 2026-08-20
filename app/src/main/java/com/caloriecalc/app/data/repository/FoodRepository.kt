@@ -30,6 +30,8 @@ class FoodRepository(
     fun observeById(id: Long): Flow<FoodItem?> = foodDao.observeById(id)
 
     suspend fun setFavorite(id: Long, isFavorite: Boolean) = foodDao.setFavorite(id, isFavorite)
+    /** Removes a food from add-food lists while preserving all historical meal entries that reference it. */
+    suspend fun removeSavedFood(id: Long) = foodDao.archive(id)
 
     /**
      * Looks up a scanned barcode locally first, then falls back to Open Food Facts.

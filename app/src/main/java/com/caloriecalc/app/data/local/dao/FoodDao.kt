@@ -26,19 +26,19 @@ interface FoodDao {
     @Query("SELECT * FROM food_items")
     suspend fun getAll(): List<FoodItem>
 
-    @Query("SELECT * FROM food_items WHERE barcode = :barcode LIMIT 1")
+    @Query("SELECT * FROM food_items WHERE barcode = :barcode AND isArchived = 0 LIMIT 1")
     suspend fun getByBarcode(barcode: String): FoodItem?
 
-    @Query("SELECT * FROM food_items WHERE name LIKE '%' || :query || '%' ORDER BY useCount DESC LIMIT 50")
+    @Query("SELECT * FROM food_items WHERE isArchived = 0 AND name LIKE '%' || :query || '%' ORDER BY useCount DESC LIMIT 50")
     fun search(query: String): Flow<List<FoodItem>>
 
-    @Query("SELECT * FROM food_items WHERE lastUsedAtEpochMillis IS NOT NULL ORDER BY lastUsedAtEpochMillis DESC LIMIT 30")
+    @Query("SELECT * FROM food_items WHERE isArchived = 0 AND lastUsedAtEpochMillis IS NOT NULL ORDER BY lastUsedAtEpochMillis DESC LIMIT 30")
     fun getRecentlyUsed(): Flow<List<FoodItem>>
 
-    @Query("SELECT * FROM food_items WHERE useCount > 0 ORDER BY useCount DESC LIMIT 30")
+    @Query("SELECT * FROM food_items WHERE isArchived = 0 AND useCount > 0 ORDER BY useCount DESC LIMIT 30")
     fun getFrequentlyUsed(): Flow<List<FoodItem>>
 
-    @Query("SELECT * FROM food_items WHERE isFavorite = 1 ORDER BY name ASC")
+    @Query("SELECT * FROM food_items WHERE isArchived = 0 AND isFavorite = 1 ORDER BY name ASC")
     fun getFavorites(): Flow<List<FoodItem>>
 
     @Query("UPDATE food_items SET useCount = useCount + 1, lastUsedAtEpochMillis = :timestamp WHERE id = :id")
@@ -46,4 +46,7 @@ interface FoodDao {
 
     @Query("UPDATE food_items SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun setFavorite(id: Long, isFavorite: Boolean)
+
+    @Query("UPDATE food_items SET isArchived = 1, isFavorite = 0 WHERE id = :id")
+    suspend fun archive(id: Long)
 }

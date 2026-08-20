@@ -11,6 +11,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,12 +49,14 @@ import kotlinx.coroutines.launch
 fun EditFoodScreen(
     foodId: Long,
     onBack: () -> Unit,
-    onSaved: () -> Unit
+    onSaved: () -> Unit,
+    onRemoved: () -> Unit
 ) {
     val container = rememberAppContainer()
     val scope = rememberCoroutineScope()
 
     var loaded by remember { mutableStateOf<FoodItem?>(null) }
+    var showRemoveConfirmation by remember { mutableStateOf(false) }
     LaunchedEffect(foodId) {
         loaded = container.foodRepository.getById(foodId)
     }
@@ -126,6 +131,11 @@ fun EditFoodScreen(
                 title = { Text("Edit food") },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
+                },
+                actions = {
+                    IconButton(onClick = { showRemoveConfirmation = true }) {
+                        Icon(Icons.Filled.Delete, contentDescription = "Remove saved food")
+                    }
                 }
             )
         }
@@ -208,5 +218,28 @@ fun EditFoodScreen(
                 Text("Save changes")
             }
         }
+    }
+
+    if (showRemoveConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showRemoveConfirmation = false },
+            title = { Text("Remove ${food.name}?") },
+            text = {
+                Text(
+                    "This removes it from saved-food lists. Meals already logged with it, including previous days, stay unchanged."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    scope.launch {
+                        container.foodRepository.removeSavedFood(food.id)
+                        onRemoved()
+                    }
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveConfirmation = false }) { Text("Cancel") }
+            }
+        )
     }
 }

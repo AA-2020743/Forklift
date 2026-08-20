@@ -38,4 +38,18 @@ class MealTimeDefaultsTest {
         assertEquals(16, local.hour)
         assertEquals(51, local.minute)
     }
+
+    @Test
+    fun `default time keeps a configured future meal time today`() {
+        val today = LocalDate.now()
+        val result = defaultMealTime(
+            today.toEpochDay(),
+            MealSlot(name = "Lunch", sortOrder = 0, targetHour = 23, targetMinute = 59)
+        )
+        val local = Instant.ofEpochMilli(result).atZone(ZoneId.systemDefault())
+
+        assertEquals(today, local.toLocalDate())
+        assertEquals(23, local.hour)
+        assertEquals(59, local.minute)
+    }
 }

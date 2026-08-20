@@ -215,7 +215,8 @@ fun AppNavHost() {
                 EditFoodScreen(
                     foodId = foodId,
                     onBack = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() }
+                    onSaved = { navController.popBackStack() },
+                    onRemoved = { navController.popBackStack() }
                 )
             }
 

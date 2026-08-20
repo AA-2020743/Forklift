@@ -33,6 +33,8 @@ data class FoodItem(
     val servingName: String? = null,
     val source: FoodSource = FoodSource.MANUAL,
     val isFavorite: Boolean = false,
+    /** Archived foods stay attached to historical meal snapshots but no longer appear when adding food. */
+    val isArchived: Boolean = false,
     val useCount: Int = 0,
     val lastUsedAtEpochMillis: Long? = null,
     val createdAtEpochMillis: Long = System.currentTimeMillis()

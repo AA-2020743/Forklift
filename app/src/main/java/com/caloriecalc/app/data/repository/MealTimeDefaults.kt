@@ -23,17 +23,15 @@ internal suspend fun resolveMealTime(
 ): Long {
     val stored = mealTimeDao.get(epochDay, mealSlotId)
     if (!forceRequested && stored != null) {
-        val normalized = normalizeMealTimeForDay(epochDay, stored.consumedAtEpochMillis)
-        if (normalized != stored.consumedAtEpochMillis) {
-            mealTimeDao.upsert(stored.copy(consumedAtEpochMillis = normalized))
-        }
-        return normalized
+        return stored.consumedAtEpochMillis
     }
 
     val fallback = stored?.consumedAtEpochMillis
         ?: defaultMealTime(epochDay, mealSlotDao.getById(mealSlotId))
     val candidate = if (forceRequested) requestedEpochMillis ?: fallback else fallback
-    val resolved = normalizeMealTimeForDay(epochDay, candidate)
+    // A slot's configured time is the default for a new meal, even later today. The user can
+    // change it from the meal screen; only explicit meal-time edits are clamped to "now".
+    val resolved = candidate
     if (forceRequested || stored == null || stored.consumedAtEpochMillis != resolved) {
         mealTimeDao.upsert(
             MealTime(
@@ -53,14 +51,8 @@ internal fun defaultMealTime(epochDay: Long, slot: com.caloriecalc.app.data.loca
     } else {
         now.toLocalTime().withSecond(0).withNano(0)
     }
-    val candidate = LocalDate.ofEpochDay(epochDay).atTime(time)
-    val today = LocalDate.now()
-    val safeCandidate = if (epochDay == today.toEpochDay() && candidate.isAfter(now)) {
-        today.atTime(now.hour, now.minute, now.second, now.nano)
-    } else {
-        candidate
-    }
-    return safeCandidate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    return LocalDate.ofEpochDay(epochDay).atTime(time)
+        .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
 internal fun normalizeMealTimeForDay(epochDay: Long, epochMillis: Long): Long {
