@@ -20,6 +20,7 @@ interface GeminiApi {
 
     companion object {
         const val BASE_URL = "https://generativelanguage.googleapis.com/"
-        const val DEFAULT_MODEL = "gemini-2.0-flash"
+        // 2.0 Flash is no longer available for new API requests and returns HTTP 404.
+        const val DEFAULT_MODEL = "gemini-2.5-flash"
     }
 }

@@ -15,6 +15,7 @@ import com.caloriecalc.app.data.remote.GeminiPart
 import com.caloriecalc.app.data.remote.MealEstimateResponse
 import java.io.ByteArrayOutputStream
 import kotlinx.serialization.json.Json
+import retrofit2.HttpException
 
 private const val PROMPT = """
 You are a nutrition estimation assistant. Look at the photo of a meal and identify each
@@ -79,6 +80,13 @@ class PhotoEstimationRepository(
                 ?: return Result.failure(IllegalStateException("Gemini returned no result — try again."))
             val parsed = json.decodeFromString<MealEstimateResponse>(text.trim())
             Result.success(parsed.items)
+        } catch (e: HttpException) {
+            val message = when (e.code()) {
+                404 -> "Gemini model is unavailable. Update the app and try again."
+                400, 401, 403 -> "Gemini rejected the request. Check your API key and Gemini API access."
+                else -> "Gemini request failed (${e.code()}). Try again."
+            }
+            Result.failure(IllegalStateException(message, e))
         } catch (e: Exception) {
             Result.failure(e)
         }
