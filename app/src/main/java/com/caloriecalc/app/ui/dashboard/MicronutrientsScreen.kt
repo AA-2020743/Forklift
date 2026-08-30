@@ -1,6 +1,7 @@
 package com.caloriecalc.app.ui.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,6 +23,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,16 +43,24 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
+private enum class MicronutrientBreakdown { SUGAR, SATURATED_FAT }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
     val container = rememberAppContainer()
     val viewModel: MicronutrientsViewModel = viewModel(
         factory = SimpleViewModelFactory {
-            MicronutrientsViewModel(epochDay, container.profileRepository, container.nutritionLogRepository)
+            MicronutrientsViewModel(
+                epochDay,
+                container.profileRepository,
+                container.nutritionLogRepository,
+                container.mealSlotRepository
+            )
         }
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var breakdown by remember { mutableStateOf<MicronutrientBreakdown?>(null) }
 
     Scaffold(
         topBar = {
@@ -75,7 +88,7 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                 Text(
                     "Sugar and saturated fat limits use 10% of your daily calorie target. " +
                         "For EU-style data, the reported sugar label is used as the combined sugar " +
-                        "value. Not medical advice.",
+                        "value. Tap either row to see its food sources. Not medical advice.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -131,6 +144,11 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                 }
             }
             items(state.rows, key = { it.target.label }) { row ->
+                val breakdownType = when (row.target.label) {
+                    "Sugar" -> MicronutrientBreakdown.SUGAR
+                    "Saturated fat" -> MicronutrientBreakdown.SATURATED_FAT
+                    else -> null
+                }
                 val dailyTarget = row.target.dailyTarget
                 val fraction = if (dailyTarget <= 0) 0f
                 else (row.consumed / dailyTarget).toFloat().coerceIn(0f, 1f)
@@ -142,7 +160,19 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                     fraction >= 0.5f -> StatusApproaching
                     else -> StatusBelowThreshold
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (breakdownType != null) {
+                                Modifier.clickable { breakdown = breakdownType }
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(30.dp)
@@ -159,7 +189,17 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(row.target.label, fontWeight = FontWeight.Medium)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(row.target.label, fontWeight = FontWeight.Medium)
+                                if (breakdownType != null) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ChevronRight,
+                                        contentDescription = "View ${row.target.label} breakdown",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                             Text(
                                 "${formatAmount(row.consumed)} / ${formatAmount(dailyTarget)} ${row.target.unit}" +
                                     if (row.target.isUpperLimit) " max" else ""
@@ -179,6 +219,24 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                 }
             }
         }
+    }
+
+    when (breakdown) {
+        MicronutrientBreakdown.SUGAR -> MacroBreakdownSheet(
+            macroLabel = "Sugar",
+            macroIcon = nutrientIcon("Sugar"),
+            accent = MaterialTheme.colorScheme.secondary,
+            contributions = state.sugarContributions,
+            onDismiss = { breakdown = null }
+        )
+        MicronutrientBreakdown.SATURATED_FAT -> MacroBreakdownSheet(
+            macroLabel = "Saturated fat",
+            macroIcon = nutrientIcon("Saturated fat"),
+            accent = MaterialTheme.colorScheme.error,
+            contributions = state.saturatedFatContributions,
+            onDismiss = { breakdown = null }
+        )
+        null -> Unit
     }
 }
 

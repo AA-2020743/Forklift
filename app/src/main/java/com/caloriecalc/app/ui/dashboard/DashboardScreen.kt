@@ -81,7 +81,6 @@ import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
-import com.caloriecalc.app.ui.components.nutrientIcon
 import com.caloriecalc.app.ui.theme.StatusApproaching
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
 import com.caloriecalc.app.ui.theme.StatusOnTarget
@@ -91,7 +90,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /** Which macro's breakdown sheet is open, if any. */
-private enum class BreakdownMacro { PROTEIN, FAT, CARBS, SUGAR, SATURATED_FAT }
+private enum class BreakdownMacro { PROTEIN, FAT, CARBS }
 
 private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
     today -> "Today"
@@ -276,56 +275,16 @@ fun DashboardScreen(
 
             item {
                 Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            SectionHeader(Icons.Filled.Medication, "Micronutrients")
-                            TextButton(onClick = { onMicronutrientsClick(state.selectedEpochDay) }) {
-                                Text("View details")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "See what is driving the day",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        LazyRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            item {
-                                FilterChip(
-                                    selected = false,
-                                    onClick = { breakdownMacro = BreakdownMacro.SUGAR },
-                                    label = { Text("Sugar sources") },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = nutrientIcon("Sugar"),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                )
-                            }
-                            item {
-                                FilterChip(
-                                    selected = false,
-                                    onClick = { breakdownMacro = BreakdownMacro.SATURATED_FAT },
-                                    label = { Text("Sat. fat sources") },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = nutrientIcon("Saturated fat"),
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                )
-                            }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SectionHeader(Icons.Filled.Medication, "Micronutrients")
+                        TextButton(onClick = { onMicronutrientsClick(state.selectedEpochDay) }) {
+                            Text("View details")
                         }
                     }
                 }
@@ -552,20 +511,6 @@ fun DashboardScreen(
             macroIcon = Icons.Filled.RiceBowl,
             accent = MaterialTheme.colorScheme.primary,
             contributions = state.carbContributions,
-            onDismiss = { breakdownMacro = null }
-        )
-        BreakdownMacro.SUGAR -> MacroBreakdownSheet(
-            macroLabel = "Sugar",
-            macroIcon = nutrientIcon("Sugar"),
-            accent = MaterialTheme.colorScheme.secondary,
-            contributions = state.sugarContributions,
-            onDismiss = { breakdownMacro = null }
-        )
-        BreakdownMacro.SATURATED_FAT -> MacroBreakdownSheet(
-            macroLabel = "Saturated fat",
-            macroIcon = nutrientIcon("Saturated fat"),
-            accent = MaterialTheme.colorScheme.error,
-            contributions = state.saturatedFatContributions,
             onDismiss = { breakdownMacro = null }
         )
         null -> Unit
