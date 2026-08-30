@@ -6,6 +6,7 @@ import com.caloriecalc.app.data.local.ApiKeyStore
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.FoodSource
 import com.caloriecalc.app.data.local.entity.Micronutrients
+import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 import com.caloriecalc.app.data.remote.EstimatedFoodItemDto
 import com.caloriecalc.app.data.remote.GeminiApi
 import com.caloriecalc.app.data.remote.GeminiContent
@@ -34,7 +35,7 @@ Respond with ONLY valid JSON, no markdown formatting, matching exactly this shap
       "carbsPer100g": number,
       "fiberPer100g": number or null,
       "sugarPer100g": number or null,
-      "addedSugarPer100g": number or null,
+      "addedSugarPer100g": number or null (the app uses sugarPer100g when this is unavailable),
       "saturatedFatPer100g": number or null,
       "sodiumMgPer100g": number or null,
       "potassiumMgPer100g": number or null,
@@ -120,6 +121,6 @@ fun EstimatedFoodItemDto.toFoodItem(): FoodItem = FoodItem(
         vitaminB12Mcg = vitaminB12McgPer100g,
         magnesiumMg = magnesiumMgPer100g,
         zincMg = zincMgPer100g
-    ),
+    ).withAddedSugarAssumedFromTotal(),
     source = FoodSource.AI_ESTIMATE
 )

@@ -317,7 +317,18 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
     }
 }
 
+/** v12 -> v13: uses the existing sugar label as added sugar for EU-style nutrition data. */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // v12 introduced the separate field, but historical entries only had total sugar. Do not
+        // leave those entries permanently excluded from the added-sugar warning.
+        db.execSQL("UPDATE food_items SET addedSugarGrams = sugarGrams WHERE addedSugarGrams IS NULL")
+        db.execSQL("UPDATE meal_entries SET addedSugarGrams = sugarGrams WHERE addedSugarGrams IS NULL")
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
+    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
+    MIGRATION_12_13
 )

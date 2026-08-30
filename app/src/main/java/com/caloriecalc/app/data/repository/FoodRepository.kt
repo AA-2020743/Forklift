@@ -4,6 +4,7 @@ import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.FoodSource
 import com.caloriecalc.app.data.local.entity.Micronutrients
+import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 import com.caloriecalc.app.data.remote.NutrimentsDto
 import com.caloriecalc.app.data.remote.OpenFoodFactsApi
 import com.caloriecalc.app.data.remote.ProductDto
@@ -130,11 +131,11 @@ class FoodRepository(
     ): FoodItem {
         // Nothing supplied? Fall back to a reference profile for the name. Without this, every
         // hand-entered food contributes nothing and the Micronutrients screen reads all zeroes.
-        val resolvedMicros = if (MicronutrientEstimator.isEmpty(micronutrients)) {
+        val resolvedMicros = (if (MicronutrientEstimator.isEmpty(micronutrients)) {
             MicronutrientEstimator.guessPer100g(name) ?: micronutrients
         } else {
             micronutrients
-        }
+        }).withAddedSugarAssumedFromTotal()
         val food = FoodItem(
             name = name,
             brand = brand,
@@ -154,8 +155,11 @@ class FoodRepository(
     }
 
     suspend fun updateFood(food: FoodItem) {
-        validateFoodValues(food)
-        foodDao.update(food)
+        val normalized = food.copy(
+            micronutrients = food.micronutrients.withAddedSugarAssumedFromTotal()
+        )
+        validateFoodValues(normalized)
+        foodDao.update(normalized)
     }
 
     private fun validateFoodValues(food: FoodItem) {
@@ -190,7 +194,7 @@ private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {
         proteinPer100g = nutriments.proteins100g ?: 0.0,
         fatPer100g = nutriments.fat100g ?: 0.0,
         carbsPer100g = nutriments.carbohydrates100g ?: 0.0,
-        micronutrients = nutriments.toMicronutrients(),
+        micronutrients = nutriments.toMicronutrients().withAddedSugarAssumedFromTotal(),
         servingSizeGrams = servingQuantity?.takeIf { it > 0 },
         servingName = servingSize?.takeIf { it.isNotBlank() },
         source = source

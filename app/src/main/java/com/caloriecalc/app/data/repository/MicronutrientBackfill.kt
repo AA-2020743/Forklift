@@ -2,6 +2,7 @@ package com.caloriecalc.app.data.repository
 
 import com.caloriecalc.app.data.local.dao.FoodDao
 import com.caloriecalc.app.data.local.dao.MealEntryDao
+import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 import com.caloriecalc.app.domain.MicronutrientEstimator
 
 /**
@@ -53,7 +54,9 @@ class MicronutrientBackfill(
         var repaired = 0
         foodDao.getAll().forEach { food ->
             if (!MicronutrientEstimator.isEmpty(food.micronutrients)) return@forEach
-            val guess = MicronutrientEstimator.guessPer100g(food.name) ?: return@forEach
+            val guess = MicronutrientEstimator.guessPer100g(food.name)
+                ?.withAddedSugarAssumedFromTotal()
+                ?: return@forEach
 
             foodDao.update(food.copy(micronutrients = guess))
             mealEntryDao.getEntriesForFood(food.id).forEach { entry ->

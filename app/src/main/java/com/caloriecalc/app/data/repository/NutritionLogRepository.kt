@@ -11,6 +11,7 @@ import com.caloriecalc.app.data.local.AppDatabase
 import com.caloriecalc.app.data.local.entity.FoodItem
 import com.caloriecalc.app.data.local.entity.MealEntry
 import com.caloriecalc.app.data.local.entity.MealTime
+import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 import com.caloriecalc.app.domain.HydrationCalculator
 import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
@@ -92,7 +93,7 @@ class NutritionLogRepository(
                     protein = food.proteinPer100g * factor,
                     fat = food.fatPer100g * factor,
                     carbs = food.carbsPer100g * factor,
-                    micronutrients = food.micronutrients.scaledBy(factor),
+                    micronutrients = food.micronutrients.withAddedSugarAssumedFromTotal().scaledBy(factor),
                     hydrationMl = HydrationCalculator.hydrationMl(grams, food.waterContentPercent, food.name)
                 )
             )

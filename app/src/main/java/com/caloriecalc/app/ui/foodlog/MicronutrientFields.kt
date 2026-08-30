@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.data.local.entity.Micronutrients
+import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 
 /** Editable per-100g micronutrient values, as text so partial input doesn't fight the user. */
 data class MicronutrientDraft(
@@ -55,7 +56,7 @@ data class MicronutrientDraft(
         vitaminB12Mcg = vitaminB12.toDoubleOrNull(),
         magnesiumMg = magnesium.toDoubleOrNull(),
         zincMg = zinc.toDoubleOrNull()
-    )
+    ).withAddedSugarAssumedFromTotal()
 
     fun isValid(): Boolean = toMicronutrients().allNonNegative()
 
@@ -63,7 +64,7 @@ data class MicronutrientDraft(
         fun from(micros: Micronutrients): MicronutrientDraft = MicronutrientDraft(
             fiber = micros.fiberGrams.text(),
             sugar = micros.sugarGrams.text(),
-            addedSugar = micros.addedSugarGrams.text(),
+            addedSugar = (micros.addedSugarGrams ?: micros.sugarGrams).text(),
             saturatedFat = micros.saturatedFatGrams.text(),
             sodium = micros.sodiumMg.text(),
             potassium = micros.potassiumMg.text(),
@@ -116,7 +117,8 @@ fun MicronutrientFields(
     Column {
         Text(
             "Per 100g. Anything left blank is treated as unknown, not zero. Added sugar is used " +
-                "for the daily-limit warning; total sugar is not.",
+                "for the daily-limit warning; when it is blank, total sugar is used as the " +
+                "temporary EU-label assumption.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

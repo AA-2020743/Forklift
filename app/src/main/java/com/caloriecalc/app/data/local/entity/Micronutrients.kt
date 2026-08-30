@@ -70,3 +70,17 @@ data class Micronutrients(
     private fun sumOrNull(a: Double?, b: Double?): Double? =
         if (a == null && b == null) null else (a ?: 0.0) + (b ?: 0.0)
 }
+
+/**
+ * EU labels generally report sugars without an added-sugar line. Until a better source is
+ * available, treat that reported sugar value as added sugar while keeping total sugar inclusive.
+ */
+fun Micronutrients.withAddedSugarAssumedFromTotal(): Micronutrients {
+    val assumedAdded = addedSugarGrams ?: sugarGrams
+    val inclusiveTotal = when {
+        sugarGrams == null -> assumedAdded
+        assumedAdded == null -> sugarGrams
+        else -> maxOf(sugarGrams, assumedAdded)
+    }
+    return copy(sugarGrams = inclusiveTotal, addedSugarGrams = assumedAdded)
+}

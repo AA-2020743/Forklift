@@ -261,7 +261,8 @@ fun DashboardScreen(
                                 }
                                 Text(
                                     "Limits are 10% of your daily calories: 4 kcal/g for added sugar " +
-                                        "and 9 kcal/g for saturated fat. Total sugar is not included.",
+                                        "and 9 kcal/g for saturated fat. EU-style sugar labels are " +
+                                        "currently treated as added sugar; total sugar is not added again.",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.padding(top = 4.dp)

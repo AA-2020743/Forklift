@@ -74,7 +74,8 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
             item {
                 Text(
                     "Added sugar and saturated fat limits use 10% of your daily calorie target. " +
-                        "Total sugar has no established daily limit. Not medical advice.",
+                        "For EU-style data, reported sugar is currently treated as added sugar. " +
+                        "Total sugar has no separate limit. Not medical advice.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
