@@ -178,7 +178,7 @@ object MicronutrientEstimator {
         Profile(
             listOf("honey", "honing"),
             Micronutrients(
-                fiberGrams = 0.2, sugarGrams = 82.0, saturatedFatGrams = 0.0, sodiumMg = 4.0,
+                fiberGrams = 0.2, sugarGrams = 82.0, addedSugarGrams = 82.0, saturatedFatGrams = 0.0, sodiumMg = 4.0,
                 potassiumMg = 52.0, calciumMg = 6.0, ironMg = 0.4, vitaminCMg = 0.5,
                 magnesiumMg = 2.0, zincMg = 0.2
             )
@@ -215,7 +215,7 @@ object MicronutrientEstimator {
     /** True when every tracked field is null — i.e. the food contributes nothing to the screen. */
     fun isEmpty(micros: Micronutrients): Boolean = with(micros) {
         listOf(
-            fiberGrams, sugarGrams, saturatedFatGrams, sodiumMg, potassiumMg, calciumMg,
+            fiberGrams, sugarGrams, addedSugarGrams, saturatedFatGrams, sodiumMg, potassiumMg, calciumMg,
             ironMg, vitaminCMg, vitaminDMcg, vitaminB12Mcg, magnesiumMg, zincMg
         ).all { it == null }
     }

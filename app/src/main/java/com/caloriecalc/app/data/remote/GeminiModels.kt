@@ -57,6 +57,7 @@ data class EstimatedFoodItemDto(
     val carbsPer100g: Double,
     val fiberPer100g: Double? = null,
     val sugarPer100g: Double? = null,
+    val addedSugarPer100g: Double? = null,
     val saturatedFatPer100g: Double? = null,
     val sodiumMgPer100g: Double? = null,
     val potassiumMgPer100g: Double? = null,

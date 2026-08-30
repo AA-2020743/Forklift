@@ -260,8 +260,8 @@ fun DashboardScreen(
                                     )
                                 }
                                 Text(
-                                    "Based on FDA Daily Values for a 2,000-calorie diet. Sugar is " +
-                                        "tracked as total sugar; the FDA reference is for added sugar.",
+                                    "Limits are 10% of your daily calories: 4 kcal/g for added sugar " +
+                                        "and 9 kcal/g for saturated fat. Total sugar is not included.",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.padding(top = 4.dp)

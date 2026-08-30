@@ -308,7 +308,16 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
+/** v11 -> v12: stores added/free sugar separately from total sugar. */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Existing products only have total sugar, which must not be reused as added sugar.
+        db.execSQL("ALTER TABLE food_items ADD COLUMN `addedSugarGrams` REAL")
+        db.execSQL("ALTER TABLE meal_entries ADD COLUMN `addedSugarGrams` REAL")
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
+    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12
 )

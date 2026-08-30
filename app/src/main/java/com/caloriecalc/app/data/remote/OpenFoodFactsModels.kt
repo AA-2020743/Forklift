@@ -74,6 +74,9 @@ data class NutrimentsDto(
     @SerialName("sugars_100g")
     @Serializable(with = FlexibleDoubleSerializer::class)
     val sugars100g: Double? = null,
+    @SerialName("added-sugars_100g")
+    @Serializable(with = FlexibleDoubleSerializer::class)
+    val addedSugars100g: Double? = null,
     @SerialName("saturated-fat_100g")
     @Serializable(with = FlexibleDoubleSerializer::class)
     val saturatedFat100g: Double? = null,

@@ -7,12 +7,17 @@ import com.caloriecalc.app.data.repository.ProfileRepository
 import com.caloriecalc.app.domain.MicronutrientEstimator
 import com.caloriecalc.app.domain.MicronutrientReference
 import com.caloriecalc.app.domain.MicronutrientTarget
+import com.caloriecalc.app.domain.NutritionCalculator
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-data class MicronutrientRow(val target: MicronutrientTarget, val consumed: Double)
+data class MicronutrientRow(
+    val target: MicronutrientTarget,
+    val consumed: Double,
+    val hasData: Boolean = true
+)
 
 data class MicronutrientsUiState(
     val rows: List<MicronutrientRow> = emptyList(),
@@ -34,9 +39,11 @@ class MicronutrientsViewModel(
         nutritionLogRepository.totalsForDay(epochDay),
         nutritionLogRepository.entriesForDay(epochDay)
     ) { profile, totals, entries ->
+        val addedSugarValues = entries.mapNotNull { it.entry.micronutrients.addedSugarGrams }
         val consumedByLabel = mapOf(
             "Fiber" to totals.fiberGrams,
-            "Sugar" to totals.sugarGrams,
+            "Total sugar" to totals.sugarGrams,
+            "Added sugar" to addedSugarValues.sum(),
             "Saturated fat" to totals.saturatedFatGrams,
             "Sodium" to totals.sodiumMg,
             "Potassium" to totals.potassiumMg,
@@ -48,8 +55,13 @@ class MicronutrientsViewModel(
             "Magnesium" to totals.magnesiumMg,
             "Zinc" to totals.zincMg
         )
-        val rows = MicronutrientReference.targets(profile.sex).map { target ->
-            MicronutrientRow(target, consumedByLabel[target.label] ?: 0.0)
+        val calorieTarget = NutritionCalculator.computeTargets(profile).calorieTarget
+        val rows = MicronutrientReference.targets(profile.sex, calorieTarget).map { target ->
+            MicronutrientRow(
+                target = target,
+                consumed = consumedByLabel[target.label] ?: 0.0,
+                hasData = target.label != "Added sugar" || addedSugarValues.isNotEmpty()
+            )
         }
         val missing = entries
             .filter { MicronutrientEstimator.isEmpty(it.entry.micronutrients) }

@@ -34,6 +34,7 @@ Respond with ONLY valid JSON, no markdown formatting, matching exactly this shap
       "carbsPer100g": number,
       "fiberPer100g": number or null,
       "sugarPer100g": number or null,
+      "addedSugarPer100g": number or null,
       "saturatedFatPer100g": number or null,
       "sodiumMgPer100g": number or null,
       "potassiumMgPer100g": number or null,
@@ -108,6 +109,7 @@ fun EstimatedFoodItemDto.toFoodItem(): FoodItem = FoodItem(
     micronutrients = Micronutrients(
         fiberGrams = fiberPer100g,
         sugarGrams = sugarPer100g,
+        addedSugarGrams = addedSugarPer100g,
         saturatedFatGrams = saturatedFatPer100g,
         sodiumMg = sodiumMgPer100g,
         potassiumMg = potassiumMgPer100g,

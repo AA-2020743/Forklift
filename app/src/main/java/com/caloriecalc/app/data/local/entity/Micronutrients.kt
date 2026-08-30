@@ -9,7 +9,10 @@ package com.caloriecalc.app.data.local.entity
  */
 data class Micronutrients(
     val fiberGrams: Double? = null,
+    /** Total sugars, including naturally occurring sugars; not used for daily-limit alerts. */
     val sugarGrams: Double? = null,
+    /** Added/free sugars when the source distinguishes them from total sugars. */
+    val addedSugarGrams: Double? = null,
     val saturatedFatGrams: Double? = null,
     val sodiumMg: Double? = null,
     val potassiumMg: Double? = null,
@@ -24,6 +27,7 @@ data class Micronutrients(
     fun scaledBy(factor: Double): Micronutrients = Micronutrients(
         fiberGrams = fiberGrams?.times(factor),
         sugarGrams = sugarGrams?.times(factor),
+        addedSugarGrams = addedSugarGrams?.times(factor),
         saturatedFatGrams = saturatedFatGrams?.times(factor),
         sodiumMg = sodiumMg?.times(factor),
         potassiumMg = potassiumMg?.times(factor),
@@ -37,7 +41,7 @@ data class Micronutrients(
     )
 
     fun allNonNegative(): Boolean = listOf(
-        fiberGrams, sugarGrams, saturatedFatGrams, sodiumMg, potassiumMg, calciumMg,
+        fiberGrams, sugarGrams, addedSugarGrams, saturatedFatGrams, sodiumMg, potassiumMg, calciumMg,
         ironMg, vitaminCMg, vitaminDMcg, vitaminB12Mcg, magnesiumMg, zincMg
     ).all { it == null || (it.isFinite() && it >= 0.0) }
 
@@ -50,6 +54,7 @@ data class Micronutrients(
     operator fun plus(other: Micronutrients): Micronutrients = Micronutrients(
         fiberGrams = sumOrNull(fiberGrams, other.fiberGrams),
         sugarGrams = sumOrNull(sugarGrams, other.sugarGrams),
+        addedSugarGrams = sumOrNull(addedSugarGrams, other.addedSugarGrams),
         saturatedFatGrams = sumOrNull(saturatedFatGrams, other.saturatedFatGrams),
         sodiumMg = sumOrNull(sodiumMg, other.sodiumMg),
         potassiumMg = sumOrNull(potassiumMg, other.potassiumMg),

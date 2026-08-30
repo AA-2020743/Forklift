@@ -171,6 +171,9 @@ class DashboardViewModel(
         }.let(::orderMealSummaries)
 
         val mealNameById = mealSlots.associate { it.id to it.name }
+        val addedSugarGrams = entries.mapNotNull { it.entry.micronutrients.addedSugarGrams }
+            .takeIf { it.isNotEmpty() }
+            ?.sum()
         fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =
             macroContributions(entries, mealNameById, macroOf)
 
@@ -202,8 +205,9 @@ class DashboardViewModel(
             fatProgress = MacroEvaluator.evaluate(totals.fat, targets.fat),
             carbProgress = MacroEvaluator.evaluate(totals.carbs, targets.carbs),
             micronutrientWarnings = MicronutrientReference.dailyLimitWarnings(
-                sugarGrams = totals.sugarGrams,
-                saturatedFatGrams = totals.saturatedFatGrams
+                addedSugarGrams = addedSugarGrams,
+                saturatedFatGrams = totals.saturatedFatGrams,
+                calorieTarget = targets.calorieTarget
             ),
             mealSummaries = mealSummaries,
             proteinContributions = contributions { it.protein },

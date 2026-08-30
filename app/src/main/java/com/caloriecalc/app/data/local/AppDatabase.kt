@@ -53,7 +53,7 @@ import com.caloriecalc.app.data.local.entity.WorkoutTemplateExercise
         MealTemplateItem::class,
         MealTime::class
     ],
-    version = 11,
+    version = 12,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

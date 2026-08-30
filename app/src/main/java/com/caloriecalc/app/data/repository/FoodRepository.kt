@@ -199,9 +199,10 @@ private fun ProductDto.toFoodItem(source: FoodSource): FoodItem? {
 
 /** Open Food Facts reports every nutriment in grams; convert the trace ones to mg/mcg. */
 private fun NutrimentsDto.toMicronutrients(): Micronutrients = Micronutrients(
-    fiberGrams = fiber100g,
-    sugarGrams = sugars100g,
-    saturatedFatGrams = saturatedFat100g,
+        fiberGrams = fiber100g,
+        sugarGrams = sugars100g,
+        addedSugarGrams = addedSugars100g,
+        saturatedFatGrams = saturatedFat100g,
     sodiumMg = sodium100g?.times(1000),
     potassiumMg = potassium100g?.times(1000),
     calciumMg = calcium100g?.times(1000),
