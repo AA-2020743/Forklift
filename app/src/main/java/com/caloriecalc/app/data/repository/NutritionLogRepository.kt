@@ -62,7 +62,8 @@ class NutritionLogRepository(
         epochDay: Long,
         grams: Double,
         consumedAtEpochMillis: Long = System.currentTimeMillis(),
-        setMealTime: Boolean = false
+        setMealTime: Boolean = false,
+        loggedAsServing: Boolean = false
     ) {
         require(grams.isFinite() && grams > 0.0)
         database.withTransaction {
@@ -85,6 +86,8 @@ class NutritionLogRepository(
                     epochDay = epochDay,
                     loggedAtEpochMillis = mealTime,
                     grams = grams,
+                    loggedAsServing = loggedAsServing,
+                    loggedServingSizeGrams = if (loggedAsServing) food.servingSizeGrams else null,
                     calories = food.caloriesPer100g * factor,
                     protein = food.proteinPer100g * factor,
                     fat = food.fatPer100g * factor,

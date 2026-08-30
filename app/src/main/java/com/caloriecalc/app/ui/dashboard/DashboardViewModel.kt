@@ -44,6 +44,28 @@ internal fun orderMealSummaries(summaries: List<MealSummary>): List<MealSummary>
         .thenBy { it.consumedAtEpochMillis }
         .thenBy { it.mealSlot.sortOrder })
 
+internal fun macroContributions(
+    entries: List<MealEntryWithFood>,
+    mealNameById: Map<Long, String>,
+    macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double
+): List<MacroContribution> =
+    entries.filter { macroOf(it.entry) > 0.0 }
+        .groupBy { Triple(it.food.id, it.entry.loggedAsServing, it.entry.loggedServingSizeGrams) }
+        .map { (key, foodEntries) ->
+            val first = foodEntries.first()
+            MacroContribution(
+                foodId = key.first,
+                foodName = first.food.name,
+                mealName = foodEntries.map { mealNameById[it.entry.mealSlotId] ?: "Meal" }
+                    .distinct().joinToString(", "),
+                grams = foodEntries.sumOf { it.entry.grams },
+                macroGrams = foodEntries.sumOf { macroOf(it.entry) },
+                loggedAsServing = key.second,
+                servingSizeGrams = key.third,
+                servingName = first.food.servingName
+            )
+        }
+
 /** A unified row for the day's "Activity" feed: either a lifting session or a quick-logged
  * cardio/misc activity, so both can render in one list. */
 sealed class ActivityRow {
@@ -147,21 +169,7 @@ class DashboardViewModel(
 
         val mealNameById = mealSlots.associate { it.id to it.name }
         fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =
-            entries.filter { macroOf(it.entry) > 0.0 }
-                .groupBy { it.food.id }
-                .map { (foodId, foodEntries) ->
-                    val first = foodEntries.first()
-                    MacroContribution(
-                        foodId = foodId,
-                        foodName = first.food.name,
-                        mealName = foodEntries.map { mealNameById[it.entry.mealSlotId] ?: "Meal" }
-                            .distinct().joinToString(", "),
-                        grams = foodEntries.sumOf { it.entry.grams },
-                        macroGrams = foodEntries.sumOf { macroOf(it.entry) },
-                        servingSizeGrams = first.food.servingSizeGrams,
-                        servingName = first.food.servingName
-                    )
-                }
+            macroContributions(entries, mealNameById, macroOf)
 
         val liftingRows = sessions.map { session ->
             val durationMinutes = session.endedAtEpochMillis?.let { end ->

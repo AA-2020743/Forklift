@@ -33,6 +33,7 @@ data class MacroContribution(
     val mealName: String,
     val grams: Double,
     val macroGrams: Double,
+    val loggedAsServing: Boolean,
     val servingSizeGrams: Double?,
     val servingName: String?
 )
@@ -119,7 +120,7 @@ fun MacroBreakdownSheet(
                 modifier = Modifier.heightIn(max = 380.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(ranked, key = { "${it.foodName}_${it.mealName}_${it.macroGrams}" }) { item ->
+                items(ranked, key = { "${it.foodId}_${it.loggedAsServing}_${it.servingSizeGrams}" }) { item ->
                     val share = if (total <= 0.0) 0 else ((item.macroGrams / total) * 100).roundToInt()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FoodIconBadge(
@@ -139,7 +140,7 @@ fun MacroBreakdownSheet(
                                 text = buildString {
                                     append(item.mealName)
                                     append(" · ")
-                                    if (item.servingSizeGrams != null) {
+                                    if (item.loggedAsServing && item.servingSizeGrams != null) {
                                         append(formatGrams(item.grams / item.servingSizeGrams))
                                         append(" serving")
                                         if (item.grams / item.servingSizeGrams != 1.0) append("s")

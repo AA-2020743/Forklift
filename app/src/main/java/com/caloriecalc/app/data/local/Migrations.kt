@@ -298,7 +298,17 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/** v10 -> v11: records whether each meal entry was entered in grams or servings. */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Older entries did not retain the selected unit, so display them as grams rather than
+        // incorrectly assuming that every food with a serving size was logged as a serving.
+        db.execSQL("ALTER TABLE meal_entries ADD COLUMN `loggedAsServing` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE meal_entries ADD COLUMN `loggedServingSizeGrams` REAL")
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
-    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10
+    MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11
 )

@@ -38,6 +38,10 @@ data class MealEntry(
     /** Consumed-at instant; all entries in a meal/day are kept aligned to the shared meal time. */
     val loggedAtEpochMillis: Long,
     val grams: Double,
+    /** Captures the quantity unit selected while logging, rather than inferring it from the food. */
+    val loggedAsServing: Boolean = false,
+    /** Serving size at log time; retained so later food edits do not change entry quantities. */
+    val loggedServingSizeGrams: Double? = null,
     val calories: Double,
     val protein: Double,
     val fat: Double,

@@ -125,7 +125,7 @@ fun QuantityScreen(
     }
 
     var mode by remember { mutableStateOf(QuantityMode.GRAMS) }
-    var amountText by remember { mutableStateOf(currentFood.servingSizeGrams?.let { "1" } ?: "100") }
+    var amountText by remember { mutableStateOf("100") }
 
     val amount = amountText.toDoubleOrNull() ?: 0.0
     val grams = when (mode) {
@@ -239,7 +239,8 @@ fun QuantityScreen(
                             epochDay,
                             grams.coerceAtLeast(0.0),
                             epochMillisForMealTime(epochDay, mealTime.first, mealTime.second),
-                            setMealTime = true
+                            setMealTime = true,
+                            loggedAsServing = mode == QuantityMode.SERVINGS
                         )
                         onLogged()
                     }
