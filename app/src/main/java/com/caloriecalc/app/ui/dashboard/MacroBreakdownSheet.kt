@@ -28,10 +28,13 @@ import kotlin.math.roundToInt
 
 /** One food's contribution to a single macro on the selected day. */
 data class MacroContribution(
+    val foodId: Long,
     val foodName: String,
     val mealName: String,
     val grams: Double,
-    val macroGrams: Double
+    val macroGrams: Double,
+    val servingSizeGrams: Double?,
+    val servingName: String?
 )
 
 /**
@@ -73,7 +76,7 @@ fun MacroBreakdownSheet(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${formatGrams(total)} g from ${ranked.size} item${if (ranked.size == 1) "" else "s"}",
+                text = "${formatGrams(total)} g from ${ranked.size} food${if (ranked.size == 1) "" else "s"}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -133,7 +136,18 @@ fun MacroBreakdownSheet(
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = "${item.mealName} · ${formatGrams(item.grams)} g",
+                                text = buildString {
+                                    append(item.mealName)
+                                    append(" · ")
+                                    if (item.servingSizeGrams != null) {
+                                        append(formatGrams(item.grams / item.servingSizeGrams))
+                                        append(" serving")
+                                        if (item.grams / item.servingSizeGrams != 1.0) append("s")
+                                    } else {
+                                        append(formatGrams(item.grams))
+                                        append(" g")
+                                    }
+                                },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

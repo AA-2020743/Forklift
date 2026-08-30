@@ -148,12 +148,18 @@ class DashboardViewModel(
         val mealNameById = mealSlots.associate { it.id to it.name }
         fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =
             entries.filter { macroOf(it.entry) > 0.0 }
-                .map { item ->
+                .groupBy { it.food.id }
+                .map { (foodId, foodEntries) ->
+                    val first = foodEntries.first()
                     MacroContribution(
-                        foodName = item.food.name,
-                        mealName = mealNameById[item.entry.mealSlotId] ?: "Meal",
-                        grams = item.entry.grams,
-                        macroGrams = macroOf(item.entry)
+                        foodId = foodId,
+                        foodName = first.food.name,
+                        mealName = foodEntries.map { mealNameById[it.entry.mealSlotId] ?: "Meal" }
+                            .distinct().joinToString(", "),
+                        grams = foodEntries.sumOf { it.entry.grams },
+                        macroGrams = foodEntries.sumOf { macroOf(it.entry) },
+                        servingSizeGrams = first.food.servingSizeGrams,
+                        servingName = first.food.servingName
                     )
                 }
 
