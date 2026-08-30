@@ -112,14 +112,13 @@ class NutritionLogRepository(
     }
 
     /** Copies every entry logged for a meal on one day onto another — the "repeat yesterday"
-     * quick action. Each copy gets a fresh id and logged-at timestamp; the source day is untouched. */
+     * quick action. Each copy gets a fresh id and the target day's current time; the source day is
+     * untouched. */
     suspend fun repeatMeal(fromEpochDay: Long, toEpochDay: Long, mealSlotId: Long) {
         database.withTransaction {
             val sourceEntries = mealEntryDao.getEntriesForMeal(fromEpochDay, mealSlotId).first()
             if (sourceEntries.isEmpty()) return@withTransaction
-            val sourceTime = mealTimeDao.get(fromEpochDay, mealSlotId)?.consumedAtEpochMillis
-                ?: sourceEntries.minOf { it.loggedAtEpochMillis }
-            val loggedAt = moveMealTimeToDay(toEpochDay, sourceTime)
+            val loggedAt = defaultMealTime(toEpochDay)
             mealTimeDao.upsert(MealTime(toEpochDay, mealSlotId, loggedAt))
             sourceEntries.forEach { entry ->
                 mealEntryDao.insert(entry.copy(id = 0, epochDay = toEpochDay, loggedAtEpochMillis = loggedAt))

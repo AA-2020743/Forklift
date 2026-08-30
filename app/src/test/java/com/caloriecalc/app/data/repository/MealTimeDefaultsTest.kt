@@ -12,7 +12,7 @@ import org.junit.Test
 class MealTimeDefaultsTest {
 
     @Test
-    fun `default time uses the system time on the selected day`() {
+    fun `repeating a meal uses the current time on the target day`() {
         val day = LocalDate.of(2026, 8, 16)
         val result = defaultMealTime(day.toEpochDay(), LocalDateTime.of(day, LocalTime.of(13, 15)))
         val local = Instant.ofEpochMilli(result).atZone(ZoneId.systemDefault())
