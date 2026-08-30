@@ -92,6 +92,8 @@ data class DashboardUiState(
     val proteinContributions: List<MacroContribution> = emptyList(),
     val fatContributions: List<MacroContribution> = emptyList(),
     val carbContributions: List<MacroContribution> = emptyList(),
+    val sugarContributions: List<MacroContribution> = emptyList(),
+    val saturatedFatContributions: List<MacroContribution> = emptyList(),
     val bodyWeightKg: Double = 75.0,
     val activityRows: List<ActivityRow> = emptyList(),
     val totalCaloriesBurned: Int = 0,
@@ -171,9 +173,6 @@ class DashboardViewModel(
         }.let(::orderMealSummaries)
 
         val mealNameById = mealSlots.associate { it.id to it.name }
-        val addedSugarGrams = entries.mapNotNull { it.entry.micronutrients.addedSugarGrams }
-            .takeIf { it.isNotEmpty() }
-            ?.sum()
         fun contributions(macroOf: (com.caloriecalc.app.data.local.entity.MealEntry) -> Double) =
             macroContributions(entries, mealNameById, macroOf)
 
@@ -205,7 +204,7 @@ class DashboardViewModel(
             fatProgress = MacroEvaluator.evaluate(totals.fat, targets.fat),
             carbProgress = MacroEvaluator.evaluate(totals.carbs, targets.carbs),
             micronutrientWarnings = MicronutrientReference.dailyLimitWarnings(
-                addedSugarGrams = addedSugarGrams,
+                sugarGrams = totals.sugarGrams,
                 saturatedFatGrams = totals.saturatedFatGrams,
                 calorieTarget = targets.calorieTarget
             ),
@@ -213,6 +212,8 @@ class DashboardViewModel(
             proteinContributions = contributions { it.protein },
             fatContributions = contributions { it.fat },
             carbContributions = contributions { it.carbs },
+            sugarContributions = contributions { it.micronutrients.sugarGrams ?: 0.0 },
+            saturatedFatContributions = contributions { it.micronutrients.saturatedFatGrams ?: 0.0 },
             bodyWeightKg = profile.bodyWeightKg,
             activityRows = activityRows,
             totalCaloriesBurned = totalBurned,

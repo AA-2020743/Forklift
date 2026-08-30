@@ -24,13 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.caloriecalc.app.data.local.entity.Micronutrients
-import com.caloriecalc.app.data.local.entity.withAddedSugarAssumedFromTotal
 
 /** Editable per-100g micronutrient values, as text so partial input doesn't fight the user. */
 data class MicronutrientDraft(
     val fiber: String = "",
     val sugar: String = "",
-    val addedSugar: String = "",
     val saturatedFat: String = "",
     val sodium: String = "",
     val potassium: String = "",
@@ -45,7 +43,6 @@ data class MicronutrientDraft(
     fun toMicronutrients(): Micronutrients = Micronutrients(
         fiberGrams = fiber.toDoubleOrNull(),
         sugarGrams = sugar.toDoubleOrNull(),
-        addedSugarGrams = addedSugar.toDoubleOrNull(),
         saturatedFatGrams = saturatedFat.toDoubleOrNull(),
         sodiumMg = sodium.toDoubleOrNull(),
         potassiumMg = potassium.toDoubleOrNull(),
@@ -56,7 +53,7 @@ data class MicronutrientDraft(
         vitaminB12Mcg = vitaminB12.toDoubleOrNull(),
         magnesiumMg = magnesium.toDoubleOrNull(),
         zincMg = zinc.toDoubleOrNull()
-    ).withAddedSugarAssumedFromTotal()
+    )
 
     fun isValid(): Boolean = toMicronutrients().allNonNegative()
 
@@ -64,7 +61,6 @@ data class MicronutrientDraft(
         fun from(micros: Micronutrients): MicronutrientDraft = MicronutrientDraft(
             fiber = micros.fiberGrams.text(),
             sugar = micros.sugarGrams.text(),
-            addedSugar = (micros.addedSugarGrams ?: micros.sugarGrams).text(),
             saturatedFat = micros.saturatedFatGrams.text(),
             sodium = micros.sodiumMg.text(),
             potassium = micros.potassiumMg.text(),
@@ -117,8 +113,7 @@ fun MicronutrientFields(
     Column {
         Text(
             "Per 100g. Anything left blank is treated as unknown, not zero. Added sugar is used " +
-                "for the daily-limit warning; when it is blank, total sugar is used as the " +
-                "temporary EU-label assumption.",
+                "for the daily-limit warning, using the reported EU sugar value for now.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -129,28 +124,24 @@ fun MicronutrientFields(
             rightLabel = "Total sugar g", rightValue = draft.sugar, onRightChange = { onChange(draft.copy(sugar = it)) }
         )
         MicroRow(
-            leftLabel = "Added sugar g", leftValue = draft.addedSugar, onLeftChange = { onChange(draft.copy(addedSugar = it)) },
-            rightLabel = "Sat. fat g", rightValue = draft.saturatedFat, onRightChange = { onChange(draft.copy(saturatedFat = it)) }
+            leftLabel = "Sat. fat g", leftValue = draft.saturatedFat, onLeftChange = { onChange(draft.copy(saturatedFat = it)) },
+            rightLabel = "Sodium mg", rightValue = draft.sodium, onRightChange = { onChange(draft.copy(sodium = it)) }
         )
         MicroRow(
-            leftLabel = "Sodium mg", leftValue = draft.sodium, onLeftChange = { onChange(draft.copy(sodium = it)) },
-            rightLabel = "Potassium mg", rightValue = draft.potassium, onRightChange = { onChange(draft.copy(potassium = it)) }
+            leftLabel = "Potassium mg", leftValue = draft.potassium, onLeftChange = { onChange(draft.copy(potassium = it)) },
+            rightLabel = "Calcium mg", rightValue = draft.calcium, onRightChange = { onChange(draft.copy(calcium = it)) }
         )
         MicroRow(
-            leftLabel = "Calcium mg", leftValue = draft.calcium, onLeftChange = { onChange(draft.copy(calcium = it)) },
-            rightLabel = "Iron mg", rightValue = draft.iron, onRightChange = { onChange(draft.copy(iron = it)) }
+            leftLabel = "Iron mg", leftValue = draft.iron, onLeftChange = { onChange(draft.copy(iron = it)) },
+            rightLabel = "Vitamin C mg", rightValue = draft.vitaminC, onRightChange = { onChange(draft.copy(vitaminC = it)) }
         )
         MicroRow(
-            leftLabel = "Vitamin C mg", leftValue = draft.vitaminC, onLeftChange = { onChange(draft.copy(vitaminC = it)) },
-            rightLabel = "Vitamin D mcg", rightValue = draft.vitaminD, onRightChange = { onChange(draft.copy(vitaminD = it)) }
+            leftLabel = "Vitamin D mcg", leftValue = draft.vitaminD, onLeftChange = { onChange(draft.copy(vitaminD = it)) },
+            rightLabel = "Vit. B12 mcg", rightValue = draft.vitaminB12, onRightChange = { onChange(draft.copy(vitaminB12 = it)) }
         )
         MicroRow(
-            leftLabel = "Vit. B12 mcg", leftValue = draft.vitaminB12, onLeftChange = { onChange(draft.copy(vitaminB12 = it)) },
-            rightLabel = "Magnesium mg", rightValue = draft.magnesium, onRightChange = { onChange(draft.copy(magnesium = it)) }
-        )
-        MicroRow(
-            leftLabel = "Zinc mg", leftValue = draft.zinc, onLeftChange = { onChange(draft.copy(zinc = it)) },
-            rightLabel = null
+            leftLabel = "Magnesium mg", leftValue = draft.magnesium, onLeftChange = { onChange(draft.copy(magnesium = it)) },
+            rightLabel = "Zinc mg", rightValue = draft.zinc, onRightChange = { onChange(draft.copy(zinc = it)) }
         )
     }
 }
@@ -160,9 +151,9 @@ private fun MicroRow(
     leftLabel: String,
     leftValue: String,
     onLeftChange: (String) -> Unit,
-    rightLabel: String?,
-    rightValue: String = "",
-    onRightChange: (String) -> Unit = {}
+    rightLabel: String,
+    rightValue: String,
+    onRightChange: (String) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -176,18 +167,14 @@ private fun MicroRow(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f)
         )
-        if (rightLabel != null) {
-            OutlinedTextField(
-                value = rightValue,
-                onValueChange = onRightChange,
-                label = { Text(rightLabel) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                modifier = Modifier.weight(1f)
-            )
-        } else {
-            Spacer(modifier = Modifier.weight(1f))
-        }
+        OutlinedTextField(
+            value = rightValue,
+            onValueChange = onRightChange,
+            label = { Text(rightLabel) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.weight(1f)
+        )
     }
     Spacer(modifier = Modifier.height(8.dp))
 }

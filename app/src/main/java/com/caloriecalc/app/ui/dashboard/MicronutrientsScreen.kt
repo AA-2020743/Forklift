@@ -73,9 +73,9 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Added sugar and saturated fat limits use 10% of your daily calorie target. " +
-                        "For EU-style data, reported sugar is currently treated as added sugar. " +
-                        "Total sugar has no separate limit. Not medical advice.",
+                    "Sugar and saturated fat limits use 10% of your daily calorie target. " +
+                        "For EU-style data, the reported sugar label is used as the combined sugar " +
+                        "value. Not medical advice.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -132,12 +132,11 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
             }
             items(state.rows, key = { it.target.label }) { row ->
                 val dailyTarget = row.target.dailyTarget
-                val fraction = if (!row.hasData || dailyTarget == null || dailyTarget <= 0) 0f
+                val fraction = if (dailyTarget <= 0) 0f
                 else (row.consumed / dailyTarget).toFloat().coerceIn(0f, 1f)
-                val overLimit = row.hasData && dailyTarget != null && row.target.isUpperLimit && row.consumed > dailyTarget
+                val overLimit = row.target.isUpperLimit && row.consumed > dailyTarget
                 val color = when {
                     overLimit -> StatusBelowThreshold
-                    !row.hasData || dailyTarget == null -> MaterialTheme.colorScheme.onSurfaceVariant
                     row.target.isUpperLimit -> StatusOnTarget
                     row.consumed >= dailyTarget -> StatusOnTarget
                     fraction >= 0.5f -> StatusApproaching
@@ -162,28 +161,20 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(row.target.label, fontWeight = FontWeight.Medium)
                             Text(
-                                if (!row.hasData) {
-                                    "No data available"
-                                } else if (dailyTarget == null) {
-                                    "${formatAmount(row.consumed)} ${row.target.unit} · no established limit"
-                                } else {
-                                    "${formatAmount(row.consumed)} / ${formatAmount(dailyTarget)} ${row.target.unit}" +
-                                        if (row.target.isUpperLimit) " max" else ""
-                                }
+                                "${formatAmount(row.consumed)} / ${formatAmount(dailyTarget)} ${row.target.unit}" +
+                                    if (row.target.isUpperLimit) " max" else ""
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        if (row.hasData && dailyTarget != null) {
-                            LinearProgressIndicator(
-                                progress = fraction,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(8.dp)
-                                    .clip(RoundedCornerShape(4.dp)),
-                                color = color,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        }
+                        LinearProgressIndicator(
+                            progress = fraction,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            color = color,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     }
                 }
             }

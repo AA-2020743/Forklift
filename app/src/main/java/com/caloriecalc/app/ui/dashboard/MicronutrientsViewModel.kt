@@ -15,8 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 
 data class MicronutrientRow(
     val target: MicronutrientTarget,
-    val consumed: Double,
-    val hasData: Boolean = true
+    val consumed: Double
 )
 
 data class MicronutrientsUiState(
@@ -39,11 +38,9 @@ class MicronutrientsViewModel(
         nutritionLogRepository.totalsForDay(epochDay),
         nutritionLogRepository.entriesForDay(epochDay)
     ) { profile, totals, entries ->
-        val addedSugarValues = entries.mapNotNull { it.entry.micronutrients.addedSugarGrams }
         val consumedByLabel = mapOf(
             "Fiber" to totals.fiberGrams,
-            "Total sugar" to totals.sugarGrams,
-            "Added sugar" to addedSugarValues.sum(),
+            "Sugar" to totals.sugarGrams,
             "Saturated fat" to totals.saturatedFatGrams,
             "Sodium" to totals.sodiumMg,
             "Potassium" to totals.potassiumMg,
@@ -57,11 +54,7 @@ class MicronutrientsViewModel(
         )
         val calorieTarget = NutritionCalculator.computeTargets(profile).calorieTarget
         val rows = MicronutrientReference.targets(profile.sex, calorieTarget).map { target ->
-            MicronutrientRow(
-                target = target,
-                consumed = consumedByLabel[target.label] ?: 0.0,
-                hasData = target.label != "Added sugar" || addedSugarValues.isNotEmpty()
-            )
+            MicronutrientRow(target, consumedByLabel[target.label] ?: 0.0)
         }
         val missing = entries
             .filter { MicronutrientEstimator.isEmpty(it.entry.micronutrients) }

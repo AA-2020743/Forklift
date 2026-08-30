@@ -3,7 +3,7 @@ package com.caloriecalc.app.domain
 data class MicronutrientTarget(
     val label: String,
     val unit: String,
-    val dailyTarget: Double?,
+    val dailyTarget: Double,
     /** True for nutrients where the "target" is a ceiling to stay under, not a floor to hit. */
     val isUpperLimit: Boolean = false
 )
@@ -15,12 +15,12 @@ data class DailyLimitWarning(
 )
 
 data class DailyLimitReferences(
-    val addedSugarGrams: Double,
+    val sugarGrams: Double,
     val saturatedFatGrams: Double
 )
 
 /**
- * Generic adult daily reference values. Added sugar and saturated fat use the widely used 10%
+ * Generic adult daily reference values. Sugar and saturated fat use the widely used 10%
  * calorie ceiling: 4 kcal/g for sugar and 9 kcal/g for fat. The older fixed 2,000-calorie label
  * values are therefore only the result at 2,000 calories, not a suitable limit for every user.
  * Not personalized beyond sex where that's the standard distinction (iron, in particular,
@@ -36,20 +36,20 @@ object MicronutrientReference {
     fun dailyLimits(calorieTarget: Int): DailyLimitReferences {
         val calories = calorieTarget.coerceAtLeast(0).toDouble()
         return DailyLimitReferences(
-            addedSugarGrams = calories * CALORIE_LIMIT_PERCENT / SUGAR_KCAL_PER_GRAM,
+            sugarGrams = calories * CALORIE_LIMIT_PERCENT / SUGAR_KCAL_PER_GRAM,
             saturatedFatGrams = calories * CALORIE_LIMIT_PERCENT / FAT_KCAL_PER_GRAM
         )
     }
 
     fun dailyLimitWarnings(
-        addedSugarGrams: Double?,
+        sugarGrams: Double,
         saturatedFatGrams: Double,
         calorieTarget: Int
     ): List<DailyLimitWarning> {
         val limits = dailyLimits(calorieTarget)
         return buildList {
-            if (addedSugarGrams != null && addedSugarGrams > limits.addedSugarGrams) {
-                add(DailyLimitWarning("Added sugar", addedSugarGrams, limits.addedSugarGrams))
+            if (sugarGrams > limits.sugarGrams) {
+                add(DailyLimitWarning("Sugar", sugarGrams, limits.sugarGrams))
             }
             if (saturatedFatGrams > limits.saturatedFatGrams) {
                 add(DailyLimitWarning("Saturated fat", saturatedFatGrams, limits.saturatedFatGrams))
@@ -64,8 +64,7 @@ object MicronutrientReference {
         val limits = dailyLimits(calorieTarget)
         return listOf(
             MicronutrientTarget("Fiber", "g", 30.0),
-            MicronutrientTarget("Total sugar", "g", null),
-            MicronutrientTarget("Added sugar", "g", limits.addedSugarGrams, isUpperLimit = true),
+            MicronutrientTarget("Sugar", "g", limits.sugarGrams, isUpperLimit = true),
             MicronutrientTarget("Saturated fat", "g", limits.saturatedFatGrams, isUpperLimit = true),
             MicronutrientTarget("Sodium", "mg", 2300.0, isUpperLimit = true),
             MicronutrientTarget("Potassium", "mg", if (sex == Sex.MALE) 3400.0 else 2600.0),

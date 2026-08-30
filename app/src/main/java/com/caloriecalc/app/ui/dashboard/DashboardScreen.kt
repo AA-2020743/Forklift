@@ -81,6 +81,7 @@ import com.caloriecalc.app.ui.components.formatGrams
 import com.caloriecalc.app.ui.components.isMainMeal
 import com.caloriecalc.app.ui.components.mealSlotAccentColor
 import com.caloriecalc.app.ui.components.mealSlotIcon
+import com.caloriecalc.app.ui.components.nutrientIcon
 import com.caloriecalc.app.ui.theme.StatusApproaching
 import com.caloriecalc.app.ui.theme.StatusBelowThreshold
 import com.caloriecalc.app.ui.theme.StatusOnTarget
@@ -90,7 +91,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /** Which macro's breakdown sheet is open, if any. */
-private enum class BreakdownMacro { PROTEIN, FAT, CARBS }
+private enum class BreakdownMacro { PROTEIN, FAT, CARBS, SUGAR, SATURATED_FAT }
 
 private fun dayLabel(epochDay: Long, today: Long): String = when (epochDay) {
     today -> "Today"
@@ -260,9 +261,9 @@ fun DashboardScreen(
                                     )
                                 }
                                 Text(
-                                    "Limits are 10% of your daily calories: 4 kcal/g for added sugar " +
-                                        "and 9 kcal/g for saturated fat. EU-style sugar labels are " +
-                                        "currently treated as added sugar; total sugar is not added again.",
+                                    "Limits are 10% of your daily calories: 4 kcal/g for sugar and " +
+                                        "9 kcal/g for saturated fat. The EU sugar label is used as " +
+                                        "the combined sugar value.",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                     modifier = Modifier.padding(top = 4.dp)
@@ -274,19 +275,58 @@ fun DashboardScreen(
             }
 
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { onMicronutrientsClick(state.selectedEpochDay) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SectionHeader(Icons.Filled.Medication, "Micronutrients")
-                        Text("View details", color = MaterialTheme.colorScheme.primary)
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SectionHeader(Icons.Filled.Medication, "Micronutrients")
+                            TextButton(onClick = { onMicronutrientsClick(state.selectedEpochDay) }) {
+                                Text("View details")
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "See what is driving the day",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { breakdownMacro = BreakdownMacro.SUGAR },
+                                    label = { Text("Sugar sources") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = nutrientIcon("Sugar"),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                )
+                            }
+                            item {
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { breakdownMacro = BreakdownMacro.SATURATED_FAT },
+                                    label = { Text("Sat. fat sources") },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = nutrientIcon("Saturated fat"),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -512,6 +552,20 @@ fun DashboardScreen(
             macroIcon = Icons.Filled.RiceBowl,
             accent = MaterialTheme.colorScheme.primary,
             contributions = state.carbContributions,
+            onDismiss = { breakdownMacro = null }
+        )
+        BreakdownMacro.SUGAR -> MacroBreakdownSheet(
+            macroLabel = "Sugar",
+            macroIcon = nutrientIcon("Sugar"),
+            accent = MaterialTheme.colorScheme.secondary,
+            contributions = state.sugarContributions,
+            onDismiss = { breakdownMacro = null }
+        )
+        BreakdownMacro.SATURATED_FAT -> MacroBreakdownSheet(
+            macroLabel = "Saturated fat",
+            macroIcon = nutrientIcon("Saturated fat"),
+            accent = MaterialTheme.colorScheme.error,
+            contributions = state.saturatedFatContributions,
             onDismiss = { breakdownMacro = null }
         )
         null -> Unit
