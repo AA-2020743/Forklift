@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.RiceBowl
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -221,6 +222,52 @@ fun DashboardScreen(
                             icon = Icons.Filled.RiceBowl,
                             onClick = { breakdownMacro = BreakdownMacro.CARBS }
                         )
+                    }
+                }
+            }
+
+            if (state.micronutrientWarnings.isNotEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    "Daily micronutrient limit exceeded",
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                state.micronutrientWarnings.forEach { warning ->
+                                    Text(
+                                        "${warning.label}: ${formatGrams(warning.consumedGrams)} g / " +
+                                            "${formatGrams(warning.limitGrams)} g max",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                                Text(
+                                    "Based on FDA Daily Values for a 2,000-calorie diet. Sugar is " +
+                                        "tracked as total sugar; the FDA reference is for added sugar.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

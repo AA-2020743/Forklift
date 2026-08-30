@@ -73,7 +73,8 @@ fun MicronutrientsScreen(epochDay: Long, onBack: () -> Unit) {
         ) {
             item {
                 Text(
-                    "Generic adult reference values, not personalized medical advice.",
+                    "FDA Daily Values are based on 2,000 calories and are not personalized medical " +
+                        "advice. The sugar reference is for added sugar; logged sugar is total sugar.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

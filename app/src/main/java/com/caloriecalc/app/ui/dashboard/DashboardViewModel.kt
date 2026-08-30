@@ -16,9 +16,11 @@ import com.caloriecalc.app.data.repository.WaterRepository
 import com.caloriecalc.app.data.repository.WorkoutRepository
 import com.caloriecalc.app.domain.ActivityCalculator
 import com.caloriecalc.app.domain.ActivityType
+import com.caloriecalc.app.domain.DailyLimitWarning
 import com.caloriecalc.app.domain.MacroEvaluator
 import com.caloriecalc.app.domain.MacroProgress
 import com.caloriecalc.app.domain.MacroStatus
+import com.caloriecalc.app.domain.MicronutrientReference
 import com.caloriecalc.app.domain.NutritionCalculator
 import com.caloriecalc.app.domain.WaterCalculator
 import java.time.LocalDate
@@ -84,6 +86,7 @@ data class DashboardUiState(
     val proteinProgress: MacroProgress = emptyMacroProgress,
     val fatProgress: MacroProgress = emptyMacroProgress,
     val carbProgress: MacroProgress = emptyMacroProgress,
+    val micronutrientWarnings: List<DailyLimitWarning> = emptyList(),
     val mealSummaries: List<MealSummary> = emptyList(),
     /** Per-food contributions for the day, so a macro row can explain what made it up. */
     val proteinContributions: List<MacroContribution> = emptyList(),
@@ -198,6 +201,10 @@ class DashboardViewModel(
             proteinProgress = MacroEvaluator.evaluate(totals.protein, targets.protein),
             fatProgress = MacroEvaluator.evaluate(totals.fat, targets.fat),
             carbProgress = MacroEvaluator.evaluate(totals.carbs, targets.carbs),
+            micronutrientWarnings = MicronutrientReference.dailyLimitWarnings(
+                sugarGrams = totals.sugarGrams,
+                saturatedFatGrams = totals.saturatedFatGrams
+            ),
             mealSummaries = mealSummaries,
             proteinContributions = contributions { it.protein },
             fatContributions = contributions { it.fat },
