@@ -61,4 +61,39 @@ class MacroContributionTest {
         assertEquals(2, result.size)
         assertEquals(listOf(false, true), result.map { it.loggedAsServing }.sorted())
     }
+
+    @Test
+    fun `combines two halva entries using their snapshotted sugar values`() {
+        val food = FoodItem(
+            id = 8,
+            name = "Halva (Pistachio)",
+            caloriesPer100g = 540.0,
+            proteinPer100g = 13.0,
+            fatPer100g = 32.0,
+            carbsPer100g = 48.0
+        )
+        val first = MealEntry(
+            foodItemId = food.id,
+            mealSlotId = 1,
+            epochDay = 1,
+            loggedAtEpochMillis = 1,
+            grams = 50.0,
+            protein = 6.5,
+            calories = 270.0,
+            fat = 16.0,
+            carbs = 24.0,
+            micronutrients = com.caloriecalc.app.data.local.entity.Micronutrients(sugarGrams = 16.0)
+        )
+        val second = first.copy(mealSlotId = 2)
+
+        val result = macroContributions(
+            entries = listOf(MealEntryWithFood(first, food), MealEntryWithFood(second, food)),
+            mealNameById = mapOf(1L to "Breakfast", 2L to "Snack"),
+            macroOf = { it.micronutrients.sugarGrams ?: 0.0 }
+        )
+
+        assertEquals(1, result.size)
+        assertEquals(100.0, result.single().grams, 0.0)
+        assertEquals(32.0, result.single().macroGrams, 0.0)
+    }
 }

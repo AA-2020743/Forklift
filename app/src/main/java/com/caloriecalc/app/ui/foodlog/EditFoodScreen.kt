@@ -148,9 +148,8 @@ fun EditFoodScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                "Changes apply going forward — meals already logged with this food keep the " +
-                    "values they were logged with. The exception is micronutrients: entries that " +
-                    "had none recorded pick up whatever you add here.",
+                "Calorie and macro changes apply going forward. Micronutrient edits refresh meals " +
+                    "already logged with this food so daily totals match its current label.",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -206,9 +205,7 @@ fun EditFoodScreen(
                                 waterContentPercent = waterContent.toDoubleOrNull()?.coerceIn(0.0, 100.0)
                             )
                         )
-                        // Entries logged before this food had micronutrient data get the new
-                        // values; ones that already had data keep what they were logged with.
-                        container.micronutrientBackfill.resyncEntriesMissingData(food.id)
+                        container.micronutrientBackfill.resyncEntriesForFood(food.id)
                         onSaved()
                     }
                 },

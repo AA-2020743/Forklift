@@ -22,31 +22,13 @@ class MicronutrientBackfill(
     private val foodDao: FoodDao,
     private val mealEntryDao: MealEntryDao
 ) {
-    /**
-     * After a food's micronutrients are edited, re-derives the snapshot on its already-logged
-     * entries that currently carry nothing. An entry can also receive a newly supplied added-sugar
-     * value without rewriting its other already-recorded micronutrients.
-     */
-    suspend fun resyncEntriesMissingData(foodId: Long) {
+    /** Re-derives every logged micronutrient snapshot after a food is edited. */
+    suspend fun resyncEntriesForFood(foodId: Long) {
         val food = foodDao.getById(foodId) ?: return
         if (MicronutrientEstimator.isEmpty(food.micronutrients)) return
         mealEntryDao.getEntriesForFood(foodId).forEach { entry ->
-            val hasNoMicronutrients = MicronutrientEstimator.isEmpty(entry.micronutrients)
-            val isMissingAddedSugar = entry.micronutrients.addedSugarGrams == null &&
-                food.micronutrients.addedSugarGrams != null
-            if (hasNoMicronutrients || isMissingAddedSugar) {
-                val factor = entry.grams / 100.0
-                val snapshot = if (hasNoMicronutrients) {
-                    food.micronutrients.scaledBy(factor)
-                } else {
-                    entry.micronutrients.copy(
-                        addedSugarGrams = food.micronutrients.addedSugarGrams?.times(factor)
-                    )
-                }
-                mealEntryDao.update(
-                    entry.copy(micronutrients = snapshot)
-                )
-            }
+            val snapshot = food.micronutrients.scaledBy(entry.grams / 100.0)
+            mealEntryDao.update(entry.copy(micronutrients = snapshot))
         }
     }
 

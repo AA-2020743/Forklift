@@ -327,8 +327,26 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
     }
 }
 
+/** v13 -> v14: refreshes sugar and saturated-fat snapshots from the current food label. */
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // The breakdown reads logged snapshots. Existing entries may still contain an older
+        // estimate even though the saved food has since been corrected (for example, halva's
+        // sugar label changing from 5.9 g to 32 g per 100 g).
+        db.execSQL(
+            "UPDATE meal_entries SET " +
+                "sugarGrams = COALESCE((SELECT sugarGrams * meal_entries.grams / 100.0 " +
+                    "FROM food_items WHERE food_items.id = meal_entries.foodItemId), sugarGrams), " +
+                "addedSugarGrams = COALESCE((SELECT addedSugarGrams * meal_entries.grams / 100.0 " +
+                    "FROM food_items WHERE food_items.id = meal_entries.foodItemId), addedSugarGrams), " +
+                "saturatedFatGrams = COALESCE((SELECT saturatedFatGrams * meal_entries.grams / 100.0 " +
+                    "FROM food_items WHERE food_items.id = meal_entries.foodItemId), saturatedFatGrams)"
+        )
+    }
+}
+
 val ALL_MIGRATIONS: Array<Migration> = arrayOf(
     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
     MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12,
-    MIGRATION_12_13
+    MIGRATION_12_13, MIGRATION_13_14
 )
